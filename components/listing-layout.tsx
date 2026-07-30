@@ -1,0 +1,270 @@
+'use client'
+
+import Link from 'next/link'
+import { useState } from 'react'
+import { PropertyCard, type Property } from './property-card'
+
+interface ListingLayoutProps {
+  title: string
+  titleEm: string
+  subtitle: string
+  properties: Property[]
+  mode: 'venda' | 'aluguel'
+}
+
+export function ListingLayout({ title, titleEm, subtitle, properties, mode }: ListingLayoutProps) {
+  const [sortBy, setSortBy] = useState('recente')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [activeChips, setActiveChips] = useState<string[]>([mode])
+
+  const removeChip = (chip: string) => setActiveChips((prev) => prev.filter((c) => c !== chip))
+
+  return (
+    <div>
+      {/* Título da página */}
+      <div className="bg-[#f4f2ee] border-b border-[#e6e2da] relative overflow-hidden">
+        <div
+          className="absolute top-0 right-0 w-[40%] h-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 100% 0%,rgba(14,107,122,.08),transparent 60%)' }}
+          aria-hidden="true"
+        />
+        <div className="max-w-[1200px] mx-auto px-4 flex items-baseline justify-between gap-4 py-7 relative">
+          <h1
+            className="text-[1.9rem] font-normal text-[#0b1420]"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            {title} <em className="italic text-[#0e6b7a]">{titleEm}</em>
+          </h1>
+          <p className="text-[#6f7680] text-[0.78rem] tracking-[.1em]">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-[1200px] mx-auto px-4 grid md:grid-cols-[1fr_260px] gap-7 py-7">
+        {/* Listagem */}
+        <main>
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+            {/* Chips */}
+            <div className="flex items-center gap-2 flex-wrap text-[0.76rem]">
+              <span className="font-semibold text-[#2a3541]">Filtrando por:</span>
+              {activeChips.map((chip) => (
+                <span
+                  key={chip}
+                  className="inline-flex items-center gap-1.5 bg-[#f4f2ee] border border-[#e6e2da] rounded-full px-3 py-1 text-[0.68rem] hover:border-[#0e6b7a] transition-colors"
+                >
+                  {chip}
+                  <button
+                    className="text-[#9a9da2] hover:text-[#0e6b7a] cursor-pointer font-medium leading-none"
+                    onClick={() => removeChip(chip)}
+                    aria-label={`Remover filtro ${chip}`}
+                  >
+                    &times;
+                  </button>
+                </span>
+              ))}
+            </div>
+            {/* Controls */}
+            <div className="flex items-center gap-2.5">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="font-sans text-[0.72rem] px-2.5 py-1.5 border border-[#e6e2da] rounded-lg text-[#444] bg-white outline-none focus:border-[#0e6b7a] cursor-pointer"
+              >
+                <option value="recente">Data mais recente</option>
+                <option value="menor">Menor preço</option>
+                <option value="maior">Maior preço</option>
+              </select>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  aria-label="Visualizar em grade"
+                  aria-pressed={viewMode === 'grid'}
+                  className={`border rounded-lg p-1.5 text-[#6b6e73] transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]' : 'bg-white border-[#e6e2da] hover:border-[#0e6b7a]'}`}
+                >
+                  <GridIcon />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  aria-label="Visualizar em lista"
+                  aria-pressed={viewMode === 'list'}
+                  className={`border rounded-lg p-1.5 text-[#6b6e73] transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]' : 'bg-white border-[#e6e2da] hover:border-[#0e6b7a]'}`}
+                >
+                  <ListIcon />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid */}
+          <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {properties.map((p) => (
+              <PropertyCard key={p.id} property={p} href={`/${mode === 'venda' ? 'vendas' : 'aluguel'}/${p.id}`} />
+            ))}
+          </div>
+
+          {/* Paginação */}
+          <nav className="flex justify-center gap-1.5 mt-8" aria-label="Paginação">
+            {['‹', '1', '2', '3', '4', '›'].map((p, i) => (
+              <a
+                key={i}
+                href="#"
+                className={`border rounded-lg px-3 py-1.5 text-[0.78rem] transition-all hover:border-[#0e6b7a] hover:text-[#0e6b7a] ${
+                  p === '1'
+                    ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]'
+                    : 'border-[#e6e2da] text-[#4a5560]'
+                }`}
+                aria-current={p === '1' ? 'page' : undefined}
+              >
+                {p}
+              </a>
+            ))}
+          </nav>
+        </main>
+
+        {/* Sidebar */}
+        <aside className="order-first md:order-last">
+          <FilterPanel mode={mode} />
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
+  return (
+    <div className="space-y-3 text-[0.76rem]">
+      {/* Finalidade */}
+      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
+        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Finalidade</h3>
+        <label className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+          <input type="radio" name="fin" defaultChecked={mode === 'venda'} className="accent-[#0e6b7a]" />
+          Venda
+          <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">1.010</span>
+        </label>
+        <label className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+          <input type="radio" name="fin" defaultChecked={mode === 'aluguel'} className="accent-[#0e6b7a]" />
+          Aluguel
+          <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">248</span>
+        </label>
+      </div>
+
+      {/* Tipo */}
+      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
+        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Tipo de imóvel</h3>
+        {[
+          { label: 'Apartamento', count: 432 },
+          { label: 'Casa em Condomínio', count: 215 },
+          { label: 'Cobertura', count: 88 },
+          { label: 'Sobrado', count: 64 },
+          { label: 'Terreno', count: 51 },
+        ].map((item) => (
+          <label key={item.label} className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+            <input type="checkbox" className="accent-[#0e6b7a]" />
+            {item.label}
+            <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">{item.count}</span>
+          </label>
+        ))}
+      </div>
+
+      {/* Cidade */}
+      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
+        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Cidade</h3>
+        {[
+          { label: 'Balneário Camboriú', count: 381 },
+          { label: 'Itapema', count: 294 },
+          { label: 'Porto Belo', count: 187 },
+          { label: 'Itajaí', count: 148 },
+        ].map((item) => (
+          <label key={item.label} className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+            <input type="checkbox" className="accent-[#0e6b7a]" />
+            {item.label}
+            <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">{item.count}</span>
+          </label>
+        ))}
+      </div>
+
+      {/* Quartos */}
+      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
+        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Quartos</h3>
+        <div className="flex gap-1.5 flex-wrap">
+          {['1+', '2+', '3+', '4+', '5+'].map((n) => (
+            <button
+              key={n}
+              className="border border-[#e6e2da] bg-white rounded-lg px-2.5 py-1.5 text-[0.72rem] text-[#55585d] cursor-pointer hover:bg-[#0e6b7a] hover:text-white hover:border-[#0e6b7a] transition-all"
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Faixa de preço */}
+      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
+        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Faixa de preço</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[0.62rem] text-[#9a9da2] mb-1">Mínimo</label>
+            <input
+              type="text"
+              placeholder="R$ 0"
+              className="w-full font-sans text-[0.74rem] px-2.5 py-2 border border-[#e6e2da] rounded-lg text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
+            />
+          </div>
+          <div>
+            <label className="block text-[0.62rem] text-[#9a9da2] mb-1">Máximo</label>
+            <input
+              type="text"
+              placeholder="Qualquer"
+              className="w-full font-sans text-[0.74rem] px-2.5 py-2 border border-[#e6e2da] rounded-lg text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Botão */}
+      <button className="w-full bg-[#0e6b7a] text-white border-0 rounded-xl py-3 text-[0.7rem] font-bold tracking-[.16em] uppercase cursor-pointer hover:bg-[#095260] transition-colors">
+        Aplicar filtros
+      </button>
+
+      {/* Contato do corretor */}
+      <div className="bg-[#0b1420] rounded-2xl p-4 text-white text-center">
+        <div className="text-[0.62rem] tracking-[.2em] uppercase text-[#c9a35a] mb-2">Precisa de ajuda?</div>
+        <p className="text-[0.8rem] text-[#8b8f96] mb-3 leading-relaxed">Fale diretamente com Marcos Teodoro</p>
+        <a
+          href="https://wa.me/5547999999999"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-[#25d366] text-white rounded-full px-4 py-2 text-[0.68rem] font-bold tracking-[.12em] uppercase hover:opacity-90 transition-opacity"
+        >
+          WhatsApp
+        </a>
+      </div>
+    </div>
+  )
+}
+
+function GridIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+
+function ListIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  )
+}
