@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Topbar } from '@/components/topbar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
@@ -282,139 +282,95 @@ function HeroSection() {
 }
 
 function PropertiesCarousel() {
-  const [kind, setKind] = useState<'todos' | PropertyKind>('todos')
-  const [mode, setMode] = useState<'venda' | 'aluguel'>('venda')
-  const scrollerRef = useRef<HTMLDivElement>(null)
-
-  const list = useMemo(
-    () =>
-      allProperties.filter(
-        (p) => p.mode === mode && (kind === 'todos' || p.kind === kind)
-      ),
-    [kind, mode]
-  )
-
-  const hrefBase = mode === 'venda' ? '/vendas' : '/aluguel'
-
-  const scrollByCard = (dir: -1 | 1) => {
-    const el = scrollerRef.current
-    if (!el) return
-    const amount = Math.min(340, el.clientWidth * 0.85)
-    el.scrollBy({ left: dir * amount, behavior: 'smooth' })
-  }
+  const apartments = allProperties.filter((p) => p.kind === 'apartamento')
+  const houses = allProperties.filter((p) => p.kind === 'casa')
 
   return (
-    <section className="pt-8 sm:pt-12 pb-8 sm:pb-12 bg-white overflow-hidden">
-      <div className="max-w-[1200px] mx-auto px-4">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 sm:mb-6">
+    <section className="bg-[#f7f5f1] border-y border-[#ebe8e2]">
+      <div className="max-w-[1100px] mx-auto px-4 py-7 sm:py-9">
+        <div className="flex items-end justify-between gap-4 mb-6 sm:mb-7">
           <div>
             <h2
-              className="text-[1.3rem] sm:text-[1.55rem] font-normal text-[#0b1420]"
+              className="text-[1.35rem] sm:text-[1.55rem] text-[#0b1420] leading-tight"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
               Imóveis no litoral
             </h2>
-            <p className="mt-1 text-[0.82rem] text-[#6f7680]">
-              Deslize para o lado e conheça casas e apartamentos
+            <p className="mt-1 text-[0.78rem] text-[#6f7680]">
+              BC, Itapema, Porto Belo e Bombinhas
             </p>
           </div>
-
-          <div className="flex items-center gap-1 p-1 rounded-full bg-[#f4f2ee] self-stretch sm:self-auto justify-center">
-            <button
-              type="button"
-              onClick={() => setMode('venda')}
-              className={`flex-1 sm:flex-none rounded-full px-4 py-2 text-[0.68rem] font-semibold tracking-[.08em] uppercase transition-colors min-h-[40px] ${
-                mode === 'venda' ? 'bg-[#0e6b7a] text-white' : 'text-[#5a6069]'
-              }`}
-            >
-              À venda
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('aluguel')}
-              className={`flex-1 sm:flex-none rounded-full px-4 py-2 text-[0.68rem] font-semibold tracking-[.08em] uppercase transition-colors min-h-[40px] ${
-                mode === 'aluguel' ? 'bg-[#0e6b7a] text-white' : 'text-[#5a6069]'
-              }`}
-            >
-              Aluguel
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <div className="flex gap-2 overflow-x-auto pb-0.5">
-            {(
-              [
-                { id: 'todos', label: 'Todos' },
-                { id: 'apartamento', label: 'Apartamentos' },
-                { id: 'casa', label: 'Casas' },
-              ] as const
-            ).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setKind(item.id)}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.72rem] border transition-colors ${
-                  kind === item.id
-                    ? 'border-[#0e6b7a] text-[#0e6b7a] bg-[#e8f4f6]'
-                    : 'border-[#e8e6e1] text-[#5a6069] hover:border-[#0e6b7a] hover:text-[#0e6b7a]'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollByCard(-1)}
-              aria-label="Anterior"
-              className="w-9 h-9 rounded-full border border-[#e8e6e1] text-[#0b1420] hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors inline-flex items-center justify-center"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollByCard(1)}
-              aria-label="Próximo"
-              className="w-9 h-9 rounded-full border border-[#e8e6e1] text-[#0b1420] hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors inline-flex items-center justify-center"
-            >
-              ›
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div
-        ref={scrollerRef}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-3 px-4 max-w-[1200px] mx-auto [scrollbar-width:thin]"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-        {list.map((p) => (
-          <div
-            key={p.id}
-            className="snap-start shrink-0 w-[min(300px,82vw)] sm:w-[300px]"
+          <Link
+            href="/vendas"
+            className="hidden sm:inline text-[0.65rem] font-semibold tracking-[.12em] uppercase text-[#0e6b7a] hover:text-[#095260] transition-colors"
           >
-            <PropertyCard property={p} href={`${hrefBase}/${p.id}`} />
-          </div>
-        ))}
-        {list.length === 0 && (
-          <p className="text-[0.88rem] text-[#6f7680] py-8 px-2">
-            Nenhum imóvel nessa categoria no momento.
-          </p>
-        )}
-      </div>
+            Ver todos
+          </Link>
+        </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 mt-6 flex justify-center">
-        <Link
-          href={hrefBase}
-          className="inline-flex items-center gap-2 text-[0.7rem] font-semibold tracking-[.12em] uppercase text-[#0e6b7a] hover:text-[#095260] transition-colors border-b border-[#0e6b7a]/30 pb-0.5"
-        >
-          Ver todos os imóveis
-        </Link>
+        <div className="space-y-5 sm:space-y-6">
+          <AutoScrollRow title="Apartamentos" href="/vendas" properties={apartments} />
+          <AutoScrollRow title="Casas" href="/vendas" properties={houses} reverse />
+        </div>
       </div>
     </section>
+  )
+}
+
+function AutoScrollRow({
+  title,
+  href,
+  properties,
+  reverse = false,
+}: {
+  title: string
+  href: string
+  properties: HomeProperty[]
+  reverse?: boolean
+}) {
+  const loop = [...properties, ...properties]
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-2.5">
+        <h3 className="text-[0.72rem] font-semibold tracking-[.14em] uppercase text-[#0b1420]">
+          {title}
+        </h3>
+        <Link
+          href={href}
+          className="text-[0.62rem] font-medium tracking-[.08em] uppercase text-[#0e6b7a] hover:opacity-80 transition-opacity sm:hidden"
+        >
+          Ver
+        </Link>
+      </div>
+
+      <div className="relative rounded-xl bg-white border border-[#ebe8e2] overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 w-6 z-10"
+          style={{ background: 'linear-gradient(90deg,#fff 20%,transparent)' }}
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 w-6 z-10"
+          style={{ background: 'linear-gradient(270deg,#fff 20%,transparent)' }}
+          aria-hidden="true"
+        />
+
+        <div className="overflow-hidden py-3">
+          <div className={`auto-scroll-track ${reverse ? 'reverse' : ''}`}>
+            {loop.map((p, i) => (
+              <div key={`${p.id}-${i}`} className="shrink-0 w-[240px] sm:w-[270px]">
+                <PropertyCard
+                  compact
+                  property={p}
+                  href={`/${p.mode === 'venda' ? 'vendas' : 'aluguel'}/${p.id}`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
