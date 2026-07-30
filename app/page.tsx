@@ -2,15 +2,21 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Topbar } from '@/components/topbar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { PropertyCard, type Property } from '@/components/property-card'
 
-const featuredProperties: Property[] = [
+type PropertyKind = 'apartamento' | 'casa'
+
+type HomeProperty = Property & { kind: PropertyKind; mode: 'venda' | 'aluguel' }
+
+const allProperties: HomeProperty[] = [
   {
     id: '1024',
+    kind: 'apartamento',
+    mode: 'venda',
     badge: 'Vista para o mar',
     location: 'Balneário Camboriú, Central',
     city: 'Balneário Camboriú, Central',
@@ -23,6 +29,8 @@ const featuredProperties: Property[] = [
   },
   {
     id: '1019',
+    kind: 'casa',
+    mode: 'venda',
     badge: 'Mobiliado',
     location: 'Itajaí, Praia Brava',
     city: 'Itajaí, Praia Brava',
@@ -35,6 +43,8 @@ const featuredProperties: Property[] = [
   },
   {
     id: '1008',
+    kind: 'apartamento',
+    mode: 'venda',
     badge: 'Lançamento',
     location: 'Itapema, Meia Praia',
     city: 'Itapema, Meia Praia',
@@ -47,6 +57,8 @@ const featuredProperties: Property[] = [
   },
   {
     id: '1002',
+    kind: 'casa',
+    mode: 'venda',
     badge: 'Condomínio',
     location: 'Porto Belo, Perequê',
     city: 'Porto Belo, Perequê',
@@ -59,6 +71,8 @@ const featuredProperties: Property[] = [
   },
   {
     id: '1005',
+    kind: 'apartamento',
+    mode: 'venda',
     badge: 'Frente ao mar',
     location: 'Balneário Camboriú, Barra Sul',
     city: 'Balneário Camboriú, Barra Sul',
@@ -71,6 +85,8 @@ const featuredProperties: Property[] = [
   },
   {
     id: '1012',
+    kind: 'apartamento',
+    mode: 'venda',
     badge: 'Alto padrão',
     location: 'Itapema, Meia Praia',
     city: 'Itapema, Meia Praia',
@@ -81,11 +97,10 @@ const featuredProperties: Property[] = [
     area: 165,
     price: 'R$ 3.890.000',
   },
-]
-
-const rentalProperties: Property[] = [
   {
     id: '2001',
+    kind: 'apartamento',
+    mode: 'aluguel',
     badge: 'Frente ao mar',
     location: 'Balneário Camboriú, Barra Sul',
     city: 'Balneário Camboriú, Barra Sul',
@@ -98,6 +113,8 @@ const rentalProperties: Property[] = [
   },
   {
     id: '2002',
+    kind: 'apartamento',
+    mode: 'aluguel',
     badge: 'Alto padrão',
     location: 'Itapema, Meia Praia',
     city: 'Itapema, Meia Praia',
@@ -109,19 +126,9 @@ const rentalProperties: Property[] = [
     price: 'Sob consulta',
   },
   {
-    id: '2003',
-    badge: 'Vista mar',
-    location: 'Itapema, Meia Praia',
-    city: 'Itapema, Meia Praia',
-    title: 'Apartamento vista mar',
-    bedrooms: 3,
-    bathrooms: 3,
-    parking: 2,
-    area: 'Sob consulta',
-    price: 'Sob consulta',
-  },
-  {
     id: '2004',
+    kind: 'casa',
+    mode: 'aluguel',
     badge: 'Exclusivo',
     location: 'Balneário Camboriú',
     city: 'Balneário Camboriú',
@@ -134,6 +141,8 @@ const rentalProperties: Property[] = [
   },
   {
     id: 'A07',
+    kind: 'apartamento',
+    mode: 'aluguel',
     badge: 'Mobiliado',
     location: 'Itapema, Centro',
     city: 'Itapema, Centro',
@@ -146,6 +155,8 @@ const rentalProperties: Property[] = [
   },
   {
     id: 'A08',
+    kind: 'casa',
+    mode: 'aluguel',
     badge: '450m do mar',
     location: 'Porto Belo, Perequê',
     city: 'Porto Belo, Perequê',
@@ -156,6 +167,20 @@ const rentalProperties: Property[] = [
     area: 280,
     price: 'R$ 8.500/mês',
   },
+  {
+    id: '1015',
+    kind: 'casa',
+    mode: 'venda',
+    badge: 'Frente ao mar',
+    location: 'Bombinhas, Mariscal',
+    city: 'Bombinhas, Mariscal',
+    title: 'Casa de praia em Mariscal',
+    bedrooms: 4,
+    bathrooms: 4,
+    parking: 3,
+    area: 260,
+    price: 'R$ 2.950.000',
+  },
 ]
 
 const MARCOS_PHOTO =
@@ -165,6 +190,8 @@ const MARCOS_PHOTO_2 =
 const HERO_BG =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Balneario-Camboriu-YDWA5F7IOLzHQrpzMPiKIvILofymQH.jpg'
 
+const WHATSAPP_BASE = 'https://wa.me/5547991594019'
+
 export default function HomePage() {
   return (
     <>
@@ -172,8 +199,7 @@ export default function HomePage() {
       <SiteHeader />
       <main>
         <HeroSection />
-        <SearchBar />
-        <PropertiesSection />
+        <PropertiesCarousel />
         <BrokerStrip />
       </main>
       <SiteFooter />
@@ -181,7 +207,6 @@ export default function HomePage() {
   )
 }
 
-/* ─────────────────────────────────── HERO ─────────────────────────────────── */
 function HeroSection() {
   return (
     <section id="sobre" className="relative text-white overflow-hidden" style={{ background: '#0b1420' }}>
@@ -203,8 +228,7 @@ function HeroSection() {
         />
       </div>
 
-      <div className="relative z-10 max-w-[1200px] mx-auto px-4 grid lg:grid-cols-[1fr_380px] items-end gap-6 lg:gap-12 pt-8 pb-12 sm:pt-10 sm:pb-14 lg:pt-14 lg:pb-20">
-        {/* Texto */}
+      <div className="relative z-10 max-w-[1200px] mx-auto px-4 grid lg:grid-cols-[1fr_380px] items-end gap-6 lg:gap-12 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-14 lg:pb-16">
         <div className="order-2 lg:order-1 pb-1">
           <div className="anim-1 text-[#c9a35a] text-[0.58rem] sm:text-[0.62rem] font-semibold tracking-[.16em] sm:tracking-[.2em] uppercase mb-2.5 sm:mb-3">
             Especialista no litoral | CRECI SC 71914
@@ -215,29 +239,12 @@ function HeroSection() {
           >
             Marcos <span className="text-[#c9a35a]">Teodoro</span>
           </h1>
-          <p className="anim-3 text-[#c8ccd1] text-[0.86rem] sm:text-[0.92rem] leading-relaxed max-w-[42ch] mb-5 sm:mb-6">
+          <p className="anim-3 text-[#c8ccd1] text-[0.86rem] sm:text-[0.92rem] leading-relaxed max-w-[42ch]">
             Especialista em imóveis do litoral Norte de SC: Balneário Camboriú, Itapema,
             Porto Belo e Bombinhas. Morar ou investir, com clareza.
           </p>
-          <div className="anim-4 flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3 w-full sm:w-auto">
-            <a
-              href="https://wa.me/5547991594019?text=Olá%20Marcos%2C%20quero%20conhecer%20imóveis."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center bg-[#c9a35a] text-[#0b1420] rounded-full px-6 py-3 sm:py-2.5 text-[0.68rem] font-semibold tracking-[.12em] uppercase hover:bg-[#d4b06a] transition-colors min-h-[44px] w-full sm:w-auto"
-            >
-              Falar com Marcos
-            </a>
-            <Link
-              href="/vendas"
-              className="inline-flex items-center justify-center border border-white/30 text-white rounded-full px-6 py-3 sm:py-2.5 text-[0.68rem] font-semibold tracking-[.12em] uppercase hover:bg-white/10 transition-colors min-h-[44px] w-full sm:w-auto"
-            >
-              Ver imóveis
-            </Link>
-          </div>
         </div>
 
-        {/* Retrato do corretor */}
         <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
           <div className="relative w-[min(220px,58vw)] sm:w-[min(280px,70vw)] lg:w-full max-w-[360px]">
             <div
@@ -274,62 +281,32 @@ function HeroSection() {
   )
 }
 
-/* ─────────────────────────────────── BUSCA ─────────────────────────────────── */
-function SearchBar() {
-  return (
-    <div className="-mt-6 sm:-mt-7 relative z-20 px-3 sm:px-4">
-      <div className="max-w-[1100px] mx-auto bg-white rounded-xl shadow-[0_10px_32px_rgba(11,20,32,.1)] border border-[#e8e6e1] px-3 py-3 sm:px-4">
-        <form className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.3fr_auto] gap-2 sm:gap-3 items-end" action="#">
-          <div className="flex flex-col gap-0.5 border-b sm:border-b-0 sm:border-r border-[#eeebe6] pb-2 sm:pb-0 sm:pr-3">
-            <label className="text-[0.55rem] font-semibold tracking-[.12em] uppercase text-[#9a9da2]">Tipo</label>
-            <select className="border-0 bg-transparent font-sans text-[0.84rem] text-[#2a3541] outline-none py-1 cursor-pointer w-full">
-              <option>Todos os imóveis</option>
-              <option>Apartamentos</option>
-              <option>Casas</option>
-              <option>Coberturas</option>
-              <option>Terrenos</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-0.5 border-b sm:border-b-0 sm:border-r border-[#eeebe6] pb-2 sm:pb-0 sm:pr-3">
-            <label className="text-[0.55rem] font-semibold tracking-[.12em] uppercase text-[#9a9da2]">Valor</label>
-            <select className="border-0 bg-transparent font-sans text-[0.84rem] text-[#2a3541] outline-none py-1 cursor-pointer w-full">
-              <option>Todos os valores</option>
-              <option>Até R$ 1M</option>
-              <option>R$ 1M a R$ 3M</option>
-              <option>R$ 3M a R$ 8M</option>
-              <option>Acima de R$ 8M</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-0.5 border-b sm:border-b-0 border-[#eeebe6] pb-2 sm:pb-0">
-            <label className="text-[0.55rem] font-semibold tracking-[.12em] uppercase text-[#9a9da2]">Cidade</label>
-            <input
-              type="text"
-              placeholder="BC, Itapema, Porto Belo…"
-              className="border-0 bg-transparent font-sans text-[0.84rem] text-[#2a3541] outline-none py-1 placeholder:text-[#b0b5bb] w-full"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-[#0e6b7a] text-white rounded-lg px-6 py-2.5 text-[0.68rem] font-semibold tracking-[.12em] uppercase hover:bg-[#095260] transition-colors w-full sm:w-auto min-h-[42px]"
-          >
-            Buscar
-          </button>
-        </form>
-      </div>
-    </div>
+function PropertiesCarousel() {
+  const [kind, setKind] = useState<'todos' | PropertyKind>('todos')
+  const [mode, setMode] = useState<'venda' | 'aluguel'>('venda')
+  const scrollerRef = useRef<HTMLDivElement>(null)
+
+  const list = useMemo(
+    () =>
+      allProperties.filter(
+        (p) => p.mode === mode && (kind === 'todos' || p.kind === kind)
+      ),
+    [kind, mode]
   )
-}
 
-/* ─────────────────────────────── IMÓVEIS (FOCO) ─────────────────────────────── */
-function PropertiesSection() {
-  const [tab, setTab] = useState<'venda' | 'aluguel'>('venda')
-  const list = tab === 'venda' ? featuredProperties : rentalProperties
-  const hrefBase = tab === 'venda' ? '/vendas' : '/aluguel'
+  const hrefBase = mode === 'venda' ? '/vendas' : '/aluguel'
+
+  const scrollByCard = (dir: -1 | 1) => {
+    const el = scrollerRef.current
+    if (!el) return
+    const amount = Math.min(340, el.clientWidth * 0.85)
+    el.scrollBy({ left: dir * amount, behavior: 'smooth' })
+  }
 
   return (
-    <section className="pt-8 sm:pt-12 pb-8 sm:pb-12 bg-white">
+    <section className="pt-8 sm:pt-12 pb-8 sm:pb-12 bg-white overflow-hidden">
       <div className="max-w-[1200px] mx-auto px-4">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 sm:mb-7">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5 sm:mb-6">
           <div>
             <h2
               className="text-[1.3rem] sm:text-[1.55rem] font-normal text-[#0b1420]"
@@ -338,25 +315,25 @@ function PropertiesSection() {
               Imóveis no litoral
             </h2>
             <p className="mt-1 text-[0.82rem] text-[#6f7680]">
-              Seleção curada por Marcos Teodoro em BC, Itapema, Porto Belo e Bombinhas
+              Deslize para o lado e conheça casas e apartamentos
             </p>
           </div>
 
           <div className="flex items-center gap-1 p-1 rounded-full bg-[#f4f2ee] self-stretch sm:self-auto justify-center">
             <button
               type="button"
-              onClick={() => setTab('venda')}
+              onClick={() => setMode('venda')}
               className={`flex-1 sm:flex-none rounded-full px-4 py-2 text-[0.68rem] font-semibold tracking-[.08em] uppercase transition-colors min-h-[40px] ${
-                tab === 'venda' ? 'bg-[#0e6b7a] text-white' : 'text-[#5a6069] hover:text-[#0b1420]'
+                mode === 'venda' ? 'bg-[#0e6b7a] text-white' : 'text-[#5a6069]'
               }`}
             >
               À venda
             </button>
             <button
               type="button"
-              onClick={() => setTab('aluguel')}
+              onClick={() => setMode('aluguel')}
               className={`flex-1 sm:flex-none rounded-full px-4 py-2 text-[0.68rem] font-semibold tracking-[.08em] uppercase transition-colors min-h-[40px] ${
-                tab === 'aluguel' ? 'bg-[#0e6b7a] text-white' : 'text-[#5a6069] hover:text-[#0b1420]'
+                mode === 'aluguel' ? 'bg-[#0e6b7a] text-white' : 'text-[#5a6069]'
               }`}
             >
               Aluguel
@@ -364,45 +341,143 @@ function PropertiesSection() {
           </div>
         </div>
 
-        {/* Atalhos rápidos */}
-        <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
-          {[
-            { label: 'Frente ao mar', href: '/vendas' },
-            { label: 'Condomínios', href: '/vendas' },
-            { label: 'Lançamentos', href: '/vendas' },
-            { label: 'Locação anual', href: '/aluguel' },
-          ].map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="shrink-0 text-[0.72rem] text-[#5a6069] border border-[#e8e6e1] rounded-full px-3.5 py-1.5 hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors"
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex gap-2 overflow-x-auto pb-0.5">
+            {(
+              [
+                { id: 'todos', label: 'Todos' },
+                { id: 'apartamento', label: 'Apartamentos' },
+                { id: 'casa', label: 'Casas' },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setKind(item.id)}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[0.72rem] border transition-colors ${
+                  kind === item.id
+                    ? 'border-[#0e6b7a] text-[#0e6b7a] bg-[#e8f4f6]'
+                    : 'border-[#e8e6e1] text-[#5a6069] hover:border-[#0e6b7a] hover:text-[#0e6b7a]'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollByCard(-1)}
+              aria-label="Anterior"
+              className="w-9 h-9 rounded-full border border-[#e8e6e1] text-[#0b1420] hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors inline-flex items-center justify-center"
             >
-              {item.label}
-            </Link>
-          ))}
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollByCard(1)}
+              aria-label="Próximo"
+              className="w-9 h-9 rounded-full border border-[#e8e6e1] text-[#0b1420] hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors inline-flex items-center justify-center"
+            >
+              ›
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {list.map((p) => (
-            <PropertyCard key={p.id} property={p} href={`${hrefBase}/${p.id}`} />
-          ))}
-        </div>
-
-        <div className="mt-7 flex justify-center">
-          <Link
-            href={hrefBase}
-            className="inline-flex items-center gap-2 text-[0.7rem] font-semibold tracking-[.12em] uppercase text-[#0e6b7a] hover:text-[#095260] transition-colors border-b border-[#0e6b7a]/30 pb-0.5"
+      <div
+        ref={scrollerRef}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-3 px-4 max-w-[1200px] mx-auto [scrollbar-width:thin]"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {list.map((p) => (
+          <div
+            key={p.id}
+            className="snap-start shrink-0 w-[min(300px,82vw)] sm:w-[300px]"
           >
-            Ver todos os imóveis
-          </Link>
-        </div>
+            <PropertyCard property={p} href={`${hrefBase}/${p.id}`} />
+          </div>
+        ))}
+        {list.length === 0 && (
+          <p className="text-[0.88rem] text-[#6f7680] py-8 px-2">
+            Nenhum imóvel nessa categoria no momento.
+          </p>
+        )}
+      </div>
+
+      <div className="max-w-[1200px] mx-auto px-4 mt-6 flex justify-center">
+        <Link
+          href={hrefBase}
+          className="inline-flex items-center gap-2 text-[0.7rem] font-semibold tracking-[.12em] uppercase text-[#0e6b7a] hover:text-[#095260] transition-colors border-b border-[#0e6b7a]/30 pb-0.5"
+        >
+          Ver todos os imóveis
+        </Link>
       </div>
     </section>
   )
 }
 
-/* ─────────────────────────── FAIXA DO CORRETOR ─────────────────────────────── */
+type Intent = 'morar' | 'investir' | 'alugar' | 'anunciar'
+type City = 'Balneário Camboriú' | 'Itapema' | 'Porto Belo' | 'Bombinhas'
+
+const INTENT_OPTIONS: { id: Intent; label: string; hint: string }[] = [
+  { id: 'morar', label: 'Quero morar', hint: 'Encontrar meu imóvel' },
+  { id: 'investir', label: 'Quero investir', hint: 'Patrimônio no litoral' },
+  { id: 'alugar', label: 'Quero alugar', hint: 'Locação anual' },
+  { id: 'anunciar', label: 'Quero anunciar', hint: 'Vender ou alugar meu imóvel' },
+]
+
+const KIND_OPTIONS: { id: PropertyKind | 'outro'; label: string }[] = [
+  { id: 'apartamento', label: 'Apartamento' },
+  { id: 'casa', label: 'Casa' },
+  { id: 'outro', label: 'Cobertura ou outro' },
+]
+
+const CITY_OPTIONS: City[] = [
+  'Balneário Camboriú',
+  'Itapema',
+  'Porto Belo',
+  'Bombinhas',
+]
+
 function BrokerStrip() {
+  const [open, setOpen] = useState(false)
+  const [step, setStep] = useState(0)
+  const [intent, setIntent] = useState<Intent | null>(null)
+  const [kind, setKind] = useState<PropertyKind | 'outro' | null>(null)
+  const [city, setCity] = useState<City | null>(null)
+
+  const reset = () => {
+    setStep(0)
+    setIntent(null)
+    setKind(null)
+    setCity(null)
+  }
+
+  const close = () => {
+    setOpen(false)
+    reset()
+  }
+
+  const openWizard = () => {
+    reset()
+    setOpen(true)
+  }
+
+  const whatsappUrl = () => {
+    const intentLabel = INTENT_OPTIONS.find((i) => i.id === intent)?.label ?? ''
+    const kindLabel = KIND_OPTIONS.find((k) => k.id === kind)?.label ?? ''
+    const text = [
+      'Olá Marcos, vim pelo site.',
+      `Interesse: ${intentLabel}.`,
+      `Tipo: ${kindLabel}.`,
+      `Cidade: ${city}.`,
+      'Pode me ajudar?',
+    ].join(' ')
+    return `${WHATSAPP_BASE}?text=${encodeURIComponent(text)}`
+  }
+
   return (
     <section id="contato" className="bg-[#f7f5f1] border-t border-[#e8e6e1]">
       <div className="max-w-[1200px] mx-auto px-4 py-8 sm:py-12">
@@ -429,19 +504,18 @@ function BrokerStrip() {
               Fale com Marcos Teodoro
             </h2>
             <p className="text-[0.86rem] text-[#5a6069] max-w-[46ch] mx-auto md:mx-0 leading-relaxed">
-              Consultoria personalizada para comprar, vender ou alugar no litoral. Sem custo.
+              Responda algumas perguntas rápidas e seja direcionado com o atendimento certo.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 justify-center">
-            <a
-              href="https://wa.me/5547991594019?text=Olá%2C%20gostaria%20de%20uma%20consultoria."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center bg-[#0e6b7a] text-white rounded-full px-6 py-2.5 text-[0.68rem] font-semibold tracking-[.12em] uppercase hover:bg-[#095260] transition-colors min-h-[42px] whitespace-nowrap"
+            <button
+              type="button"
+              onClick={openWizard}
+              className="inline-flex items-center justify-center bg-[#0e6b7a] text-white rounded-full px-6 py-2.5 text-[0.68rem] font-semibold tracking-[.12em] uppercase hover:bg-[#095260] transition-colors min-h-[42px] whitespace-nowrap cursor-pointer"
             >
-              WhatsApp
-            </a>
+              Falar com Marcos
+            </button>
             <a
               href="https://www.instagram.com/marcosteodoro.imoveis/"
               target="_blank"
@@ -453,6 +527,136 @@ function BrokerStrip() {
           </div>
         </div>
       </div>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contact-wizard-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-[#0b1420]/45"
+            aria-label="Fechar"
+            onClick={close}
+          />
+          <div className="relative w-full sm:max-w-[440px] bg-white rounded-t-2xl sm:rounded-2xl shadow-xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div>
+                <div className="text-[0.55rem] font-semibold tracking-[.14em] uppercase text-[#0e6b7a] mb-1">
+                  Passo {Math.min(step + 1, 3)} de 3
+                </div>
+                <h3
+                  id="contact-wizard-title"
+                  className="text-[1.2rem] text-[#0b1420]"
+                  style={{ fontFamily: 'var(--font-serif)' }}
+                >
+                  {step === 0 && 'O que você deseja?'}
+                  {step === 1 && 'Qual tipo de imóvel?'}
+                  {step === 2 && 'Em qual cidade?'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={close}
+                className="w-9 h-9 rounded-full border border-[#e8e6e1] text-[#5a6069] hover:text-[#0b1420] transition-colors"
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            {step === 0 && (
+              <div className="grid gap-2">
+                {INTENT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => {
+                      setIntent(opt.id)
+                      setStep(1)
+                    }}
+                    className="text-left border border-[#e8e6e1] rounded-xl px-4 py-3 hover:border-[#0e6b7a] hover:bg-[#faf9f7] transition-colors"
+                  >
+                    <div className="text-[0.9rem] font-medium text-[#0b1420]">{opt.label}</div>
+                    <div className="text-[0.75rem] text-[#6f7680] mt-0.5">{opt.hint}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="grid gap-2">
+                {KIND_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => {
+                      setKind(opt.id)
+                      setStep(2)
+                    }}
+                    className="text-left border border-[#e8e6e1] rounded-xl px-4 py-3 hover:border-[#0e6b7a] hover:bg-[#faf9f7] transition-colors text-[0.9rem] font-medium text-[#0b1420]"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setStep(0)}
+                  className="mt-2 text-[0.72rem] text-[#6f7680] hover:text-[#0e6b7a]"
+                >
+                  Voltar
+                </button>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="grid gap-2">
+                {CITY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setCity(opt)}
+                    className={`text-left border rounded-xl px-4 py-3 transition-colors text-[0.9rem] font-medium ${
+                      city === opt
+                        ? 'border-[#0e6b7a] bg-[#e8f4f6] text-[#0e6b7a]'
+                        : 'border-[#e8e6e1] text-[#0b1420] hover:border-[#0e6b7a] hover:bg-[#faf9f7]'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+
+                <a
+                  href={city ? whatsappUrl() : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-disabled={!city}
+                  onClick={(e) => {
+                    if (!city) e.preventDefault()
+                  }}
+                  className={`mt-3 inline-flex items-center justify-center rounded-full px-6 py-3 text-[0.7rem] font-semibold tracking-[.12em] uppercase min-h-[44px] transition-colors ${
+                    city
+                      ? 'bg-[#0e6b7a] text-white hover:bg-[#095260]'
+                      : 'bg-[#e8e6e1] text-[#9a9da2] pointer-events-none'
+                  }`}
+                >
+                  Continuar no WhatsApp
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="mt-1 text-[0.72rem] text-[#6f7680] hover:text-[#0e6b7a]"
+                >
+                  Voltar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
