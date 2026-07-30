@@ -43,7 +43,7 @@ export function SiteHeader() {
               MARCOS <span className="text-[#0e6b7a]">TEODORO</span>
             </div>
             <div className="text-[0.55rem] sm:text-[0.62rem] text-[#6f7680] tracking-[.08em] sm:tracking-[.14em] uppercase leading-tight mt-0.5">
-              Corretor · SC
+              Corretor no litoral
             </div>
           </div>
         </Link>
@@ -68,7 +68,7 @@ export function SiteHeader() {
                 href="/#contato"
                 className="bg-[#0e6b7a] text-white rounded-full px-5 py-2 text-[0.68rem] font-semibold tracking-[.14em] uppercase transition-all hover:bg-[#095260] hover:-translate-y-px"
               >
-                Anuncie seu imóvel
+                Anunciar
               </Link>
             </li>
           </ul>
@@ -115,7 +115,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="mt-3 flex items-center justify-center bg-[#0e6b7a] text-white rounded-full px-5 py-3.5 text-[0.72rem] font-semibold tracking-[.14em] uppercase min-h-[48px]"
             >
-              Anuncie seu imóvel
+              Anunciar
             </Link>
           </nav>
         </div>

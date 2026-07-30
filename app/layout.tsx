@@ -17,12 +17,12 @@ const _fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
-  title: 'Marcos Teodoro — Corretor de Imóveis no Litoral de SC',
+  title: 'Marcos Teodoro | Corretor de Imóveis no Litoral de SC',
   description:
-    'Especialista em investimento imobiliário no litoral Norte de Santa Catarina. Imóveis à venda e para alugar em Balneário Camboriú, Itapema e Porto Belo. CRECI/SC 71914.',
+    'Especialista em investimento imobiliário no litoral Norte de Santa Catarina. Imóveis à venda e para alugar em Balneário Camboriú, Itapema e Porto Belo. CRECI SC 71914.',
   keywords: ['corretor de imóveis', 'Balneário Camboriú', 'Itapema', 'Porto Belo', 'imóveis litoral SC'],
   openGraph: {
-    title: 'Marcos Teodoro — Corretor de Imóveis',
+    title: 'Marcos Teodoro | Corretor de Imóveis',
     description: 'Especialista em investimento imobiliário no litoral Norte de SC.',
     locale: 'pt_BR',
     type: 'website',

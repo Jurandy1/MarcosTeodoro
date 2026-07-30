@@ -23,20 +23,15 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
   return (
     <div>
       {/* Título da página */}
-      <div className="bg-[#f4f2ee] border-b border-[#e6e2da] relative overflow-hidden">
-        <div
-          className="absolute top-0 right-0 w-[40%] h-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle at 100% 0%,rgba(14,107,122,.08),transparent 60%)' }}
-          aria-hidden="true"
-        />
-        <div className="max-w-[1200px] mx-auto px-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 py-5 sm:py-7 relative">
+      <div className="bg-[#faf9f7] border-b border-[#e8e6e1]">
+        <div className="max-w-[1200px] mx-auto px-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 py-6 sm:py-8">
           <h1
-            className="text-[1.55rem] sm:text-[1.9rem] font-normal text-[#0b1420] leading-tight"
+            className="text-[1.55rem] sm:text-[1.85rem] font-normal text-[#0b1420] leading-tight"
             style={{ fontFamily: 'var(--font-serif)' }}
           >
-            {title} <em className="italic text-[#0e6b7a]">{titleEm}</em>
+            {title} <em className="not-italic text-[#0e6b7a]">{titleEm}</em>
           </h1>
-          <p className="text-[#6f7680] text-[0.72rem] sm:text-[0.78rem] tracking-[.08em] sm:tracking-[.1em]">
+          <p className="text-[#6f7680] text-[0.78rem]">
             {subtitle}
           </p>
         </div>
@@ -153,65 +148,47 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
 
 function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
   return (
-    <div className="space-y-3 text-[0.76rem]">
-      {/* Finalidade */}
-      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
-        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Finalidade</h3>
-        <label className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+    <div className="space-y-4 text-[0.78rem]">
+      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Finalidade</h3>
+        <label className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
           <input type="radio" name="fin" defaultChecked={mode === 'venda'} className="accent-[#0e6b7a]" />
           Venda
-          <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">1.010</span>
         </label>
-        <label className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+        <label className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
           <input type="radio" name="fin" defaultChecked={mode === 'aluguel'} className="accent-[#0e6b7a]" />
           Aluguel
-          <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">248</span>
         </label>
       </div>
 
-      {/* Tipo */}
-      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
-        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Tipo de imóvel</h3>
-        {[
-          { label: 'Apartamento', count: 432 },
-          { label: 'Casa em Condomínio', count: 215 },
-          { label: 'Cobertura', count: 88 },
-          { label: 'Sobrado', count: 64 },
-          { label: 'Terreno', count: 51 },
-        ].map((item) => (
-          <label key={item.label} className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Tipo</h3>
+        {['Apartamento', 'Casa em Condomínio', 'Cobertura', 'Sobrado', 'Terreno'].map((label) => (
+          <label key={label} className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
             <input type="checkbox" className="accent-[#0e6b7a]" />
-            {item.label}
-            <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">{item.count}</span>
+            {label}
           </label>
         ))}
       </div>
 
-      {/* Cidade */}
-      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
-        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Cidade</h3>
-        {[
-          { label: 'Balneário Camboriú', count: 381 },
-          { label: 'Itapema', count: 294 },
-          { label: 'Porto Belo', count: 187 },
-          { label: 'Itajaí', count: 148 },
-        ].map((item) => (
-          <label key={item.label} className="flex items-center gap-2 py-1.5 text-[#55585d] cursor-pointer">
+      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Cidade</h3>
+        {['Balneário Camboriú', 'Itapema', 'Porto Belo', 'Itajaí'].map((label) => (
+          <label key={label} className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
             <input type="checkbox" className="accent-[#0e6b7a]" />
-            {item.label}
-            <span className="ml-auto bg-[#f4f2ee] rounded-full text-[0.6rem] px-2 py-0.5 text-[#8a8d92]">{item.count}</span>
+            {label}
           </label>
         ))}
       </div>
 
-      {/* Quartos */}
-      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
-        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Quartos</h3>
-        <div className="flex gap-1.5 flex-wrap">
+      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Quartos</h3>
+        <div className="flex gap-2 flex-wrap">
           {['1+', '2+', '3+', '4+', '5+'].map((n) => (
             <button
               key={n}
-              className="border border-[#e6e2da] bg-white rounded-lg px-2.5 py-1.5 text-[0.72rem] text-[#55585d] cursor-pointer hover:bg-[#0e6b7a] hover:text-white hover:border-[#0e6b7a] transition-all"
+              type="button"
+              className="border border-[#e8e6e1] bg-white rounded-md px-3 py-1.5 text-[0.72rem] text-[#2a3541] cursor-pointer hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors"
             >
               {n}
             </button>
@@ -219,45 +196,38 @@ function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
         </div>
       </div>
 
-      {/* Faixa de preço */}
-      <div className="bg-white border border-[#e6e2da] rounded-2xl p-4">
-        <h3 className="text-[0.62rem] font-bold tracking-[.18em] uppercase text-[#4a5560] mb-3">Faixa de preço</h3>
+      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Preço</h3>
         <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-[0.62rem] text-[#9a9da2] mb-1">Mínimo</label>
-            <input
-              type="text"
-              placeholder="R$ 0"
-              className="w-full font-sans text-[0.74rem] px-2.5 py-2 border border-[#e6e2da] rounded-lg text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-[0.62rem] text-[#9a9da2] mb-1">Máximo</label>
-            <input
-              type="text"
-              placeholder="Qualquer"
-              className="w-full font-sans text-[0.74rem] px-2.5 py-2 border border-[#e6e2da] rounded-lg text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Mín."
+            className="w-full font-sans text-[0.78rem] px-3 py-2 border border-[#e8e6e1] rounded-md text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
+          />
+          <input
+            type="text"
+            placeholder="Máx."
+            className="w-full font-sans text-[0.78rem] px-3 py-2 border border-[#e8e6e1] rounded-md text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
+          />
         </div>
       </div>
 
-      {/* Botão */}
-      <button className="w-full bg-[#0e6b7a] text-white border-0 rounded-xl py-3 text-[0.7rem] font-bold tracking-[.16em] uppercase cursor-pointer hover:bg-[#095260] transition-colors">
-        Aplicar filtros
+      <button
+        type="button"
+        className="w-full bg-[#0e6b7a] text-white border-0 rounded-lg py-3 text-[0.7rem] font-semibold tracking-[.12em] uppercase cursor-pointer hover:bg-[#095260] transition-colors"
+      >
+        Aplicar
       </button>
 
-      {/* Contato do corretor */}
-      <div className="bg-[#0b1420] rounded-2xl p-4 text-white text-center">
-        <div className="text-[0.62rem] tracking-[.2em] uppercase text-[#c9a35a] mb-2">Precisa de ajuda?</div>
-        <p className="text-[0.8rem] text-[#8b8f96] mb-3 leading-relaxed">Fale diretamente com Marcos Teodoro</p>
+      <div className="border border-[#e8e6e1] rounded-xl p-5 text-center bg-[#faf9f7]">
+        <p className="text-[0.8rem] text-[#5a6069] mb-3 leading-relaxed">Precisa de ajuda?</p>
         <a
           href="https://wa.me/5547991594019"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25d366] text-white rounded-full px-4 py-2 text-[0.68rem] font-bold tracking-[.12em] uppercase hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 text-[#0e6b7a] text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:underline underline-offset-4"
         >
-          WhatsApp
+          Falar no WhatsApp
         </a>
       </div>
     </div>
