@@ -1,9 +1,12 @@
 export function Topbar() {
   return (
-    <div className="bg-[#0b1420] text-[#c9cacd] text-[0.72rem]">
-      <div className="max-w-[1200px] mx-auto px-4 flex items-center justify-between gap-4 py-[0.55rem] flex-wrap">
-        <span className="tracking-wide">CRECI/SC 71914 &middot; BC &middot; Itapema &middot; Porto Belo &middot; Bombinhas</span>
-        <div className="flex items-center gap-5">
+    <div className="bg-[#0b1420] text-[#c9cacd] text-[0.65rem] sm:text-[0.72rem]">
+      <div className="max-w-[1200px] mx-auto px-4 flex items-center justify-between gap-3 py-2 sm:py-[0.55rem]">
+        <span className="tracking-wide truncate min-w-0">
+          <span className="sm:hidden">CRECI/SC 71914 · Litoral SC</span>
+          <span className="hidden sm:inline">CRECI/SC 71914 &middot; BC &middot; Itapema &middot; Porto Belo &middot; Bombinhas</span>
+        </span>
+        <div className="flex items-center gap-3 sm:gap-5 shrink-0">
           <a
             href="https://www.instagram.com/marcosteodoro.imoveis/"
             target="_blank"

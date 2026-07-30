@@ -78,29 +78,29 @@ export function PropertyCard({ property, href = '#' }: { property: Property; hre
       </Link>
 
       {/* Info */}
-      <div className="p-4 flex flex-col flex-1">
+      <div className="p-3.5 sm:p-4 flex flex-col flex-1 min-w-0">
         {/* Localização */}
-        <div className="flex justify-between items-baseline gap-2 text-[0.6rem] font-bold tracking-[.1em] uppercase text-[#4a5560] mb-1">
-          <span className="flex items-center gap-1">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0e6b7a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <div className="flex justify-between items-baseline gap-2 text-[0.58rem] sm:text-[0.6rem] font-bold tracking-[.08em] sm:tracking-[.1em] uppercase text-[#4a5560] mb-1">
+          <span className="flex items-center gap-1 min-w-0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0e6b7a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
               <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
-            {property.city}
+            <span className="truncate">{property.city}</span>
           </span>
-          <span className="text-[#adb0b5] font-medium tracking-[.02em]">#{property.id}</span>
+          <span className="text-[#adb0b5] font-medium tracking-[.02em] shrink-0">#{property.id}</span>
         </div>
 
         {/* Título */}
         <h3
-          className="text-[1rem] font-normal text-[#1a2432] mb-3 leading-snug min-h-[2.8em]"
+          className="text-[0.95rem] sm:text-[1rem] font-normal text-[#1a2432] mb-3 leading-snug min-h-[2.6em] sm:min-h-[2.8em]"
           style={{ fontFamily: 'var(--font-serif)' }}
         >
           {property.title}
         </h3>
 
         {/* Atributos */}
-        <div className="flex gap-3 text-[0.7rem] text-[#7a7d82] border-t border-[#e6e2da] pt-2.5 mt-auto">
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[0.68rem] sm:text-[0.7rem] text-[#7a7d82] border-t border-[#e6e2da] pt-2.5 mt-auto">
           <span className="flex items-center gap-1">
             <BedIcon />
             <b className="text-[#33353a] font-semibold">{property.bedrooms}</b>
@@ -120,7 +120,7 @@ export function PropertyCard({ property, href = '#' }: { property: Property; hre
         </div>
 
         {/* Preço */}
-        <div className="mt-2.5 text-[1.05rem] font-bold text-[#0b1420]">
+        <div className="mt-2.5 text-[0.98rem] sm:text-[1.05rem] font-bold text-[#0b1420] break-words">
           {property.priceOld && (
             <s className="text-[0.68rem] text-[#b3b6ba] font-medium mr-1.5">{property.priceOld}</s>
           )}

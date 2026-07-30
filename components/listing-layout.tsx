@@ -16,6 +16,7 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
   const [sortBy, setSortBy] = useState('recente')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [activeChips, setActiveChips] = useState<string[]>([mode])
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const removeChip = (chip: string) => setActiveChips((prev) => prev.filter((c) => c !== chip))
 
@@ -28,26 +29,44 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
           style={{ background: 'radial-gradient(circle at 100% 0%,rgba(14,107,122,.08),transparent 60%)' }}
           aria-hidden="true"
         />
-        <div className="max-w-[1200px] mx-auto px-4 flex items-baseline justify-between gap-4 py-7 relative">
+        <div className="max-w-[1200px] mx-auto px-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 py-5 sm:py-7 relative">
           <h1
-            className="text-[1.9rem] font-normal text-[#0b1420]"
+            className="text-[1.55rem] sm:text-[1.9rem] font-normal text-[#0b1420] leading-tight"
             style={{ fontFamily: 'var(--font-serif)' }}
           >
             {title} <em className="italic text-[#0e6b7a]">{titleEm}</em>
           </h1>
-          <p className="text-[#6f7680] text-[0.78rem] tracking-[.1em]">
+          <p className="text-[#6f7680] text-[0.72rem] sm:text-[0.78rem] tracking-[.08em] sm:tracking-[.1em]">
             {subtitle}
           </p>
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 grid md:grid-cols-[1fr_260px] gap-7 py-7">
+      <div className="max-w-[1200px] mx-auto px-4 grid md:grid-cols-[1fr_260px] gap-5 md:gap-7 py-5 md:py-7">
         {/* Listagem */}
-        <main>
+        <main className="min-w-0">
+          {/* Mobile filter toggle */}
+          <button
+            type="button"
+            className="md:hidden w-full mb-4 flex items-center justify-between gap-3 bg-white border border-[#e6e2da] rounded-xl px-4 py-3 text-[0.72rem] font-bold tracking-[.12em] uppercase text-[#0b1420]"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+          >
+            <span className="flex items-center gap-2">
+              <FilterIcon />
+              Filtros
+            </span>
+            <span className="text-[#0e6b7a]">{filtersOpen ? 'Fechar' : 'Abrir'}</span>
+          </button>
+
+          <div className={`md:hidden mb-4 ${filtersOpen ? 'block' : 'hidden'}`}>
+            <FilterPanel mode={mode} />
+          </div>
+
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
             {/* Chips */}
-            <div className="flex items-center gap-2 flex-wrap text-[0.76rem]">
+            <div className="flex items-center gap-2 flex-wrap text-[0.72rem] sm:text-[0.76rem]">
               <span className="font-semibold text-[#2a3541]">Filtrando por:</span>
               {activeChips.map((chip) => (
                 <span
@@ -66,17 +85,17 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
               ))}
             </div>
             {/* Controls */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="font-sans text-[0.72rem] px-2.5 py-1.5 border border-[#e6e2da] rounded-lg text-[#444] bg-white outline-none focus:border-[#0e6b7a] cursor-pointer"
+                className="flex-1 sm:flex-none font-sans text-[0.72rem] px-2.5 py-1.5 border border-[#e6e2da] rounded-lg text-[#444] bg-white outline-none focus:border-[#0e6b7a] cursor-pointer"
               >
                 <option value="recente">Data mais recente</option>
                 <option value="menor">Menor preço</option>
                 <option value="maior">Maior preço</option>
               </select>
-              <div className="flex gap-1">
+              <div className="flex gap-1 shrink-0">
                 <button
                   onClick={() => setViewMode('grid')}
                   aria-label="Visualizar em grade"
@@ -105,7 +124,7 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
           </div>
 
           {/* Paginação */}
-          <nav className="flex justify-center gap-1.5 mt-8" aria-label="Paginação">
+          <nav className="flex justify-center gap-1.5 mt-8 flex-wrap" aria-label="Paginação">
             {['‹', '1', '2', '3', '4', '›'].map((p, i) => (
               <a
                 key={i}
@@ -123,8 +142,8 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
           </nav>
         </main>
 
-        {/* Sidebar */}
-        <aside className="order-first md:order-last">
+        {/* Sidebar desktop */}
+        <aside className="hidden md:block">
           <FilterPanel mode={mode} />
         </aside>
       </div>
@@ -233,7 +252,7 @@ function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
         <div className="text-[0.62rem] tracking-[.2em] uppercase text-[#c9a35a] mb-2">Precisa de ajuda?</div>
         <p className="text-[0.8rem] text-[#8b8f96] mb-3 leading-relaxed">Fale diretamente com Marcos Teodoro</p>
         <a
-          href="https://wa.me/5547999999999"
+          href="https://wa.me/5547991594019"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-[#25d366] text-white rounded-full px-4 py-2 text-[0.68rem] font-bold tracking-[.12em] uppercase hover:opacity-90 transition-opacity"
@@ -242,6 +261,16 @@ function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
         </a>
       </div>
     </div>
+  )
+}
+
+function FilterIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+      <line x1="10" y1="18" x2="14" y2="18" />
+    </svg>
   )
 }
 

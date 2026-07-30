@@ -57,10 +57,15 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     font-size: 14px;
     line-height: 1.6;
+    overflow-x: clip;
   }
   a {
     color: inherit;
@@ -69,6 +74,12 @@
   img {
     display: block;
     max-width: 100%;
+  }
+  button,
+  a,
+  input,
+  select {
+    touch-action: manipulation;
   }
 }
 

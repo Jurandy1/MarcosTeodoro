@@ -3,10 +3,10 @@ import Link from 'next/link'
 export function SiteFooter() {
   return (
     <footer className="bg-[#0b1420] text-[#a9abaf] text-[0.78rem]">
-      <div className="max-w-[1200px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-10 py-12">
+      <div className="max-w-[1200px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 py-8 sm:py-12">
         {/* Coluna 1: identidade */}
         <div>
-          <div className="flex items-center gap-2.5 mb-5">
+          <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
             <div
               className="w-8 h-8 border border-[#c9a35a] text-[#c9a35a] flex items-center justify-center rounded-md shrink-0"
               style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1.1rem' }}
@@ -14,7 +14,7 @@ export function SiteFooter() {
             >
               M
             </div>
-            <div className="text-[0.95rem] font-bold tracking-[.22em] text-white uppercase">
+            <div className="text-[0.82rem] sm:text-[0.95rem] font-bold tracking-[.14em] sm:tracking-[.22em] text-white uppercase">
               MARCOS <span className="text-[#c9a35a]">TEODORO</span>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function SiteFooter() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Fale pelo WhatsApp"
-        className="fixed bottom-5 right-5 w-14 h-14 rounded-full bg-[#25d366] flex items-center justify-center shadow-[0_10px_28px_rgba(0,0,0,.3)] z-50 hover:scale-110 transition-transform"
+        className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-[max(1.25rem,env(safe-area-inset-right))] w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#25d366] flex items-center justify-center shadow-[0_10px_28px_rgba(0,0,0,.3)] z-50 hover:scale-110 transition-transform"
         style={{ animation: 'floatY 4s ease-in-out infinite' }}
       >
         <svg width="26" height="26" viewBox="0 0 24 24" fill="white" aria-hidden="true">
