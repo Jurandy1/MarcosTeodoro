@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Fontes */
-  --font-sans: 'Montserrat', 'Montserrat Fallback';
-  --font-serif: 'Fraunces', 'Fraunces Fallback';
+  /* Fontes — resolvem para as variáveis geradas pelo next/font em <html> */
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
 
   /* Paleta litoral premium */
   --color-background: #ffffff;
@@ -63,9 +63,23 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.6;
     overflow-x: clip;
+  }
+  @media (min-width: 640px) {
+    body {
+      font-size: 14px;
+    }
+  }
+  /* iOS Safari faz zoom automático em qualquer input/select com font-size < 16px.
+     No mobile forçamos 16px; a partir de sm, a classe utilitária do Tailwind ganha. */
+  @media (max-width: 639.98px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
   }
   a {
     color: inherit;
@@ -122,8 +136,28 @@
   animation-name: marqueeR;
   animation-duration: 52s;
 }
-.auto-scroll-track:hover {
+.auto-scroll-track:hover,
+.auto-scroll-track:active {
   animation-play-state: paused;
+}
+/* Touch devices sem hover: dá controle real de scroll ao usuário em vez de marquee que arrasta o card antes de ler. */
+@media (hover: none) and (pointer: coarse) {
+  .auto-scroll-track {
+    animation: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .auto-scroll-track::-webkit-scrollbar {
+    display: none;
+  }
+  .auto-scroll-track > * {
+    scroll-snap-align: start;
+  }
 }
 @media (min-width: 1024px) {
   .auto-scroll-track {

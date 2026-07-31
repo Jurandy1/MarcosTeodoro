@@ -3,12 +3,11 @@ import Link from 'next/link'
 export function SiteFooter() {
   return (
     <footer className="bg-[#0b1420] text-[#a9abaf] text-[0.78rem]">
-      <div className="max-w-[1200px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 py-8 sm:py-12">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 py-8 sm:py-12">
         <div>
           <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
             <div
-              className="w-8 h-8 border border-[#c9a35a] text-[#c9a35a] flex items-center justify-center rounded-md shrink-0"
-              style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1.1rem' }}
+              className="font-serif italic text-[1.1rem] w-8 h-8 border border-[#c9a35a] text-[#c9a35a] flex items-center justify-center rounded-md shrink-0"
               aria-hidden="true"
             >
               M
@@ -20,18 +19,18 @@ export function SiteFooter() {
           <p className="text-[0.8rem] leading-relaxed text-[#8b8f96] mb-4 max-w-[32ch]">
             Especialista em investimentos imobiliários de alto padrão no litoral norte de Santa Catarina
           </p>
-          <p className="text-[0.68rem] tracking-[.1em] text-[#5a6069]">CRECI SC 71914</p>
+          <p className="text-[0.72rem] sm:text-[0.68rem] tracking-[.1em] text-[#5a6069]">CRECI SC 71914</p>
         </div>
 
         <div>
-          <h4 className="text-[0.62rem] font-bold tracking-[.28em] uppercase text-white mb-4">
+          <h4 className="text-[0.7rem] sm:text-[0.62rem] font-bold tracking-[.2em] sm:tracking-[.28em] uppercase text-white mb-4">
             Navegação
           </h4>
           <ul className="space-y-2.5">
             {[
               { href: '/', label: 'Início' },
-              { href: '/vendas', label: 'Apartamentos a venda' },
-              { href: '/vendas', label: 'Casas a venda' },
+              { href: '/vendas?tipo=apartamento', label: 'Apartamentos a venda' },
+              { href: '/vendas?tipo=casa', label: 'Casas a venda' },
               { href: '/#sobre', label: 'Sobre Marcos' },
             ].map((link) => (
               <li key={link.label}>
@@ -44,7 +43,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="border-t border-white/[0.08] text-center py-5 text-[0.65rem] text-[#5a6069] tracking-[.06em]">
+      <div className="border-t border-white/[0.08] text-center py-5 text-[0.72rem] sm:text-[0.65rem] text-[#5a6069] tracking-[.06em]">
         &copy; {new Date().getFullYear()} Marcos Teodoro. Todos os direitos reservados.
       </div>
 

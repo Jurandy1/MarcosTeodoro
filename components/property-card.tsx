@@ -42,23 +42,20 @@ export function PropertyCard({
               alt={property.title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-              sizes="280px"
+              sizes="(max-width: 640px) 240px, (max-width: 1024px) 280px, 300px"
             />
             {property.badge && (
-              <div className="absolute top-2.5 left-2.5 z-10 text-[0.52rem] font-semibold tracking-[.1em] uppercase px-2 py-1 rounded-md bg-white/95 text-[#0b1420]">
+              <div className="absolute top-2.5 left-2.5 z-10 text-[0.62rem] sm:text-[0.55rem] font-semibold tracking-[.1em] uppercase px-2 py-1 rounded-md bg-white/95 text-[#0b1420]">
                 {property.badge}
               </div>
             )}
           </div>
         </Link>
         <div className="px-3.5 py-3 flex flex-col flex-1 min-w-0">
-          <div className="text-[0.58rem] font-medium tracking-[.08em] uppercase text-[#8a9098] truncate mb-1">
+          <div className="text-[0.65rem] sm:text-[0.58rem] font-medium tracking-[.08em] uppercase text-[#8a9098] truncate mb-1">
             {property.city}
           </div>
-          <h3
-            className="text-[0.95rem] text-[#1a2432] leading-snug line-clamp-2 min-h-[2.5em] mb-2.5"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
+          <h3 className="font-serif text-[0.95rem] text-[#1a2432] leading-snug line-clamp-2 min-h-[2.5em] mb-2.5">
             <Link href={href} className="hover:text-[#0e6b7a] transition-colors">
               {property.title}
             </Link>
@@ -99,7 +96,7 @@ export function PropertyCard({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
           {property.badge && (
-            <div className="absolute top-3 left-3 z-10 text-[0.55rem] font-semibold tracking-[.12em] uppercase px-2.5 py-1 rounded-md bg-white/95 text-[#0b1420] shadow-sm">
+            <div className="absolute top-3 left-3 z-10 text-[0.62rem] sm:text-[0.55rem] font-semibold tracking-[.12em] uppercase px-2.5 py-1 rounded-md bg-white/95 text-[#0b1420] shadow-sm">
               {property.badge}
             </div>
           )}
@@ -107,14 +104,11 @@ export function PropertyCard({
       </Link>
 
       <div className="p-4 flex flex-col flex-1 min-w-0">
-        <div className="text-[0.62rem] font-medium tracking-[.08em] uppercase text-[#6f7680] mb-1.5 truncate">
+        <div className="text-[0.68rem] sm:text-[0.62rem] font-medium tracking-[.08em] uppercase text-[#6f7680] mb-1.5 truncate">
           {property.city}
         </div>
 
-        <h3
-          className="text-[0.98rem] font-normal text-[#1a2432] mb-3 leading-snug line-clamp-2 min-h-[2.6em]"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
+        <h3 className="font-serif text-[0.98rem] font-normal text-[#1a2432] mb-3 leading-snug line-clamp-2 min-h-[2.6em]">
           <Link href={href} className="hover:text-[#0e6b7a] transition-colors">
             {property.title}
           </Link>

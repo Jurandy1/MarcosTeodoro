@@ -1,46 +1,215 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { PropertyCard, type Property } from './property-card'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { PropertyCard } from './property-card'
+import {
+  CITY_FILTERS,
+  filterProperties,
+  type CatalogProperty,
+  type PropertyKind,
+  type PropertyMode,
+} from '@/lib/properties'
 
 interface ListingLayoutProps {
   title: string
   titleEm: string
   subtitle: string
-  properties: Property[]
-  mode: 'venda' | 'aluguel'
+  properties: CatalogProperty[]
+  mode: PropertyMode
 }
 
-export function ListingLayout({ title, titleEm, subtitle, properties, mode }: ListingLayoutProps) {
-  const [sortBy, setSortBy] = useState('recente')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [activeChips, setActiveChips] = useState<string[]>([mode])
-  const [filtersOpen, setFiltersOpen] = useState(false)
+const PRICE_PRESETS = [
+  { label: 'Até 2 mi', value: 2000000 },
+  { label: 'Até 4 mi', value: 4000000 },
+  { label: 'Até 7 mi', value: 7000000 },
+  { label: 'Até 15 mi', value: 15000000 },
+]
 
-  const removeChip = (chip: string) => setActiveChips((prev) => prev.filter((c) => c !== chip))
+export function ListingLayout({ title, titleEm, subtitle, properties, mode }: ListingLayoutProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [searchDraft, setSearchDraft] = useState(searchParams.get('q') ?? '')
+
+  const kind = (searchParams.get('tipo') as PropertyKind | null) || null
+  const city = searchParams.get('cidade')
+  const bedroomsMin = searchParams.get('dormitorios')
+    ? Number(searchParams.get('dormitorios'))
+    : null
+  const bathroomsMin = searchParams.get('banheiros')
+    ? Number(searchParams.get('banheiros'))
+    : null
+  const priceMax = searchParams.get('preco') ? Number(searchParams.get('preco')) : null
+  const q = searchParams.get('q')
+  const sortBy = (searchParams.get('ordem') as 'recente' | 'menor' | 'maior') || 'recente'
+
+  useEffect(() => {
+    setSearchDraft(q ?? '')
+  }, [q])
+
+  const updateParams = useCallback(
+    (patch: Record<string, string | null>) => {
+      const next = new URLSearchParams(searchParams.toString())
+      Object.entries(patch).forEach(([key, value]) => {
+        if (!value) next.delete(key)
+        else next.set(key, value)
+      })
+      const qs = next.toString()
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const next = searchDraft.trim()
+      if ((q ?? '') === next) return
+      updateParams({ q: next || null })
+    }, 280)
+    return () => clearTimeout(t)
+  }, [searchDraft, q, updateParams])
+
+  const filtered = useMemo(
+    () =>
+      filterProperties(properties, {
+        kind,
+        city,
+        bedroomsMin,
+        bathroomsMin,
+        priceMax,
+        q,
+        sortBy,
+      }),
+    [properties, kind, city, bedroomsMin, bathroomsMin, priceMax, q, sortBy],
+  )
+
+  const clearAll = () => {
+    setSearchDraft('')
+    updateParams({
+      tipo: null,
+      cidade: null,
+      dormitorios: null,
+      banheiros: null,
+      preco: null,
+      q: null,
+      ordem: null,
+    })
+  }
+
+  const activeCount = [kind, city, bedroomsMin, bathroomsMin, priceMax, q].filter(Boolean).length
+  const basePath = mode === 'venda' ? '/vendas' : '/aluguel'
 
   return (
     <div>
-      {/* Título da página */}
       <div className="bg-[#faf9f7] border-b border-[#e8e6e1]">
-        <div className="max-w-[1200px] mx-auto px-4 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 py-6 sm:py-8">
-          <h1
-            className="text-[1.55rem] sm:text-[1.85rem] font-normal text-[#0b1420] leading-tight"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            {title} <em className="not-italic text-[#0e6b7a]">{titleEm}</em>
-          </h1>
-          <p className="text-[#6f7680] text-[0.78rem]">
-            {subtitle}
-          </p>
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-5">
+            <h1 className="font-serif text-[1.55rem] sm:text-[1.85rem] font-normal text-[#0b1420] leading-tight">
+              {title} <em className="not-italic text-[#0e6b7a]">{titleEm}</em>
+            </h1>
+            <p className="text-[#6f7680] text-[0.78rem]">
+              {filtered.length} {filtered.length === 1 ? 'imóvel' : 'imóveis'} · {subtitle}
+            </p>
+          </div>
+
+          {/* Busca rápida */}
+          <div className="relative mb-4">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9a9da2]" aria-hidden="true">
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="Buscar por nome, empreendimento ou cidade…"
+              className="w-full font-sans text-[0.9rem] pl-11 pr-4 py-3.5 border border-[#e6e2da] rounded-xl bg-white text-[#0b1420] outline-none focus:border-[#0e6b7a] shadow-[0_2px_10px_rgba(11,20,32,.04)]"
+            />
+          </div>
+
+          {/* Filtros rápidos */}
+          <div className="space-y-3">
+            <QuickRow label="Tipo">
+              {(
+                [
+                  { id: null, label: 'Todos' },
+                  { id: 'apartamento' as const, label: 'Apartamentos' },
+                  { id: 'casa' as const, label: 'Casas' },
+                ] as const
+              ).map((opt) => (
+                <QuickChip
+                  key={String(opt.id)}
+                  active={kind === opt.id || (!kind && opt.id === null)}
+                  onClick={() => updateParams({ tipo: opt.id })}
+                >
+                  {opt.label}
+                </QuickChip>
+              ))}
+            </QuickRow>
+
+            <QuickRow label="Cidade">
+              <QuickChip active={!city} onClick={() => updateParams({ cidade: null })}>
+                Todas
+              </QuickChip>
+              {CITY_FILTERS.map((c) => (
+                <QuickChip
+                  key={c}
+                  active={city === c}
+                  onClick={() => updateParams({ cidade: city === c ? null : c })}
+                >
+                  {c === 'Balneário Camboriú' ? 'BC' : c}
+                </QuickChip>
+              ))}
+            </QuickRow>
+
+            <QuickRow label="Dorm.">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <QuickChip
+                  key={n}
+                  active={bedroomsMin === n}
+                  onClick={() =>
+                    updateParams({ dormitorios: bedroomsMin === n ? null : String(n) })
+                  }
+                >
+                  {n}+
+                </QuickChip>
+              ))}
+            </QuickRow>
+
+            {mode === 'venda' && (
+              <QuickRow label="Valor">
+                {PRICE_PRESETS.map((p) => (
+                  <QuickChip
+                    key={p.value}
+                    active={priceMax === p.value}
+                    onClick={() =>
+                      updateParams({ preco: priceMax === p.value ? null : String(p.value) })
+                    }
+                  >
+                    {p.label}
+                  </QuickChip>
+                ))}
+              </QuickRow>
+            )}
+          </div>
+
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="mt-4 text-[0.72rem] font-semibold tracking-[.08em] uppercase text-[#0e6b7a] hover:text-[#095260]"
+            >
+              Limpar filtros ({activeCount})
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 grid md:grid-cols-[1fr_260px] gap-5 md:gap-7 py-5 md:py-7">
-        {/* Listagem */}
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-[1fr_240px] gap-5 md:gap-7 py-5 md:py-7 pb-24 md:pb-7">
         <main className="min-w-0">
-          {/* Mobile filter toggle */}
           <button
             type="button"
             className="md:hidden w-full mb-4 flex items-center justify-between gap-3 bg-white border border-[#e6e2da] rounded-xl px-4 py-3 text-[0.72rem] font-bold tracking-[.12em] uppercase text-[#0b1420]"
@@ -49,61 +218,53 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
           >
             <span className="flex items-center gap-2">
               <FilterIcon />
-              Filtros
+              Mais filtros
             </span>
             <span className="text-[#0e6b7a]">{filtersOpen ? 'Fechar' : 'Abrir'}</span>
           </button>
 
           <div className={`md:hidden mb-4 ${filtersOpen ? 'block' : 'hidden'}`}>
-            <FilterPanel mode={mode} />
+            <FilterPanel
+              mode={mode}
+              bathroomsMin={bathroomsMin}
+              onChange={updateParams}
+            />
           </div>
 
-          {/* Toolbar */}
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            {/* Chips */}
-            <div className="flex items-center gap-2 flex-wrap text-[0.72rem] sm:text-[0.76rem]">
-              <span className="font-semibold text-[#2a3541]">Filtrando por:</span>
-              {activeChips.map((chip) => (
-                <span
-                  key={chip}
-                  className="inline-flex items-center gap-1.5 bg-[#f4f2ee] border border-[#e6e2da] rounded-full px-3 py-1 text-[0.68rem] hover:border-[#0e6b7a] transition-colors"
-                >
-                  {chip}
-                  <button
-                    className="text-[#9a9da2] hover:text-[#0e6b7a] cursor-pointer font-medium leading-none"
-                    onClick={() => removeChip(chip)}
-                    aria-label={`Remover filtro ${chip}`}
-                  >
-                    &times;
-                  </button>
-                </span>
-              ))}
-            </div>
-            {/* Controls */}
-            <div className="flex items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
+            <p className="text-[0.78rem] text-[#6f7680]">
+              {filtered.length === 0
+                ? 'Nenhum resultado'
+                : `Mostrando ${filtered.length} ${filtered.length === 1 ? 'imóvel' : 'imóveis'}`}
+            </p>
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="flex-1 sm:flex-none font-sans text-[0.72rem] px-2.5 py-1.5 border border-[#e6e2da] rounded-lg text-[#444] bg-white outline-none focus:border-[#0e6b7a] cursor-pointer"
+                onChange={(e) =>
+                  updateParams({ ordem: e.target.value === 'recente' ? null : e.target.value })
+                }
+                className="font-sans text-[0.72rem] px-2.5 py-1.5 border border-[#e6e2da] rounded-lg text-[#444] bg-white outline-none focus:border-[#0e6b7a] cursor-pointer"
               >
-                <option value="recente">Data mais recente</option>
+                <option value="recente">Mais recentes</option>
                 <option value="menor">Menor preço</option>
                 <option value="maior">Maior preço</option>
               </select>
               <div className="flex gap-1 shrink-0">
                 <button
+                  type="button"
                   onClick={() => setViewMode('grid')}
                   aria-label="Visualizar em grade"
                   aria-pressed={viewMode === 'grid'}
-                  className={`border rounded-lg p-1.5 text-[#6b6e73] transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]' : 'bg-white border-[#e6e2da] hover:border-[#0e6b7a]'}`}
+                  className={`border rounded-lg p-1.5 text-[#6b6e73] transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]' : 'bg-white border-[#e6e2da]'}`}
                 >
                   <GridIcon />
                 </button>
                 <button
+                  type="button"
                   onClick={() => setViewMode('list')}
                   aria-label="Visualizar em lista"
                   aria-pressed={viewMode === 'list'}
-                  className={`border rounded-lg p-1.5 text-[#6b6e73] transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]' : 'bg-white border-[#e6e2da] hover:border-[#0e6b7a]'}`}
+                  className={`border rounded-lg p-1.5 text-[#6b6e73] transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]' : 'bg-white border-[#e6e2da]'}`}
                 >
                   <ListIcon />
                 </button>
@@ -111,118 +272,132 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
             </div>
           </div>
 
-          {/* Grid */}
-          <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-            {properties.map((p) => (
-              <PropertyCard key={p.id} property={p} href={`/${mode === 'venda' ? 'vendas' : 'aluguel'}/${p.id}`} />
-            ))}
-          </div>
-
-          {/* Paginação */}
-          <nav className="flex justify-center gap-1.5 mt-8 flex-wrap" aria-label="Paginação">
-            {['‹', '1', '2', '3', '4', '›'].map((p, i) => (
-              <a
-                key={i}
-                href="#"
-                className={`border rounded-lg px-3 py-1.5 text-[0.78rem] transition-all hover:border-[#0e6b7a] hover:text-[#0e6b7a] ${
-                  p === '1'
-                    ? 'bg-[#0e6b7a] text-white border-[#0e6b7a]'
-                    : 'border-[#e6e2da] text-[#4a5560]'
-                }`}
-                aria-current={p === '1' ? 'page' : undefined}
+          {filtered.length === 0 ? (
+            <div className="bg-white border border-[#e8e6e1] rounded-xl p-8 text-center text-[#6f7680] text-[0.9rem]">
+              Nenhum imóvel encontrado. Tente limpar ou ajustar os filtros.
+              <button
+                type="button"
+                className="block mx-auto mt-3 text-[#0e6b7a] font-semibold text-[0.75rem] tracking-[.08em] uppercase"
+                onClick={clearAll}
               >
-                {p}
-              </a>
-            ))}
-          </nav>
+                Limpar filtros
+              </button>
+            </div>
+          ) : (
+            <div
+              className={`grid gap-4 ${
+                viewMode === 'grid'
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-1 sm:grid-cols-2'
+              }`}
+            >
+              {filtered.map((p) => (
+                <PropertyCard key={p.id} property={p} href={`${basePath}/${p.id}`} />
+              ))}
+            </div>
+          )}
         </main>
 
-        {/* Sidebar desktop */}
         <aside className="hidden md:block">
-          <FilterPanel mode={mode} />
+          <FilterPanel mode={mode} bathroomsMin={bathroomsMin} onChange={updateParams} />
         </aside>
       </div>
     </div>
   )
 }
 
-function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
+function QuickRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-4 text-[0.78rem]">
+    <div className="flex items-start gap-3">
+      <span className="shrink-0 w-12 pt-1.5 text-[0.62rem] font-semibold tracking-[.12em] uppercase text-[#8a9098]">
+        {label}
+      </span>
+      <div className="flex flex-wrap gap-1.5 min-w-0">{children}</div>
+    </div>
+  )
+}
+
+function QuickChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-[0.72rem] font-medium transition-colors cursor-pointer ${
+        active
+          ? 'bg-[#0e6b7a] text-white'
+          : 'bg-white border border-[#e6e2da] text-[#2a3541] hover:border-[#0e6b7a] hover:text-[#0e6b7a]'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function FilterPanel({
+  mode,
+  bathroomsMin,
+  onChange,
+}: {
+  mode: PropertyMode
+  bathroomsMin: number | null
+  onChange: (patch: Record<string, string | null>) => void
+}) {
+  return (
+    <div className="space-y-4 text-[0.78rem] sticky top-24">
       <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
-        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Finalidade</h3>
-        <label className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
-          <input type="radio" name="fin" defaultChecked={mode === 'venda'} className="accent-[#0e6b7a]" />
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">
+          Finalidade
+        </h3>
+        <Link
+          href="/vendas"
+          className={`flex items-center gap-2.5 py-1.5 ${mode === 'venda' ? 'text-[#0e6b7a] font-semibold' : 'text-[#2a3541]'}`}
+        >
           Venda
-        </label>
-        <label className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
-          <input type="radio" name="fin" defaultChecked={mode === 'aluguel'} className="accent-[#0e6b7a]" />
+        </Link>
+        <Link
+          href="/aluguel"
+          className={`flex items-center gap-2.5 py-1.5 ${mode === 'aluguel' ? 'text-[#0e6b7a] font-semibold' : 'text-[#2a3541]'}`}
+        >
           Aluguel
-        </label>
+        </Link>
       </div>
 
       <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
-        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Tipo</h3>
-        {['Apartamento', 'Casa em Condomínio', 'Cobertura', 'Sobrado', 'Terreno'].map((label) => (
-          <label key={label} className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
-            <input type="checkbox" className="accent-[#0e6b7a]" />
-            {label}
-          </label>
-        ))}
-      </div>
-
-      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
-        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Cidade</h3>
-        {['Balneário Camboriú', 'Itapema', 'Porto Belo', 'Itajaí'].map((label) => (
-          <label key={label} className="flex items-center gap-2.5 py-1.5 text-[#2a3541] cursor-pointer">
-            <input type="checkbox" className="accent-[#0e6b7a]" />
-            {label}
-          </label>
-        ))}
-      </div>
-
-      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
-        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Quartos</h3>
+        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">
+          Banheiros
+        </h3>
         <div className="flex gap-2 flex-wrap">
-          {['1+', '2+', '3+', '4+', '5+'].map((n) => (
+          {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
-              className="border border-[#e8e6e1] bg-white rounded-md px-3 py-1.5 text-[0.72rem] text-[#2a3541] cursor-pointer hover:border-[#0e6b7a] hover:text-[#0e6b7a] transition-colors"
+              onClick={() => onChange({ banheiros: bathroomsMin === n ? null : String(n) })}
+              className={`border rounded-md px-3 py-1.5 text-[0.72rem] cursor-pointer transition-colors ${
+                bathroomsMin === n
+                  ? 'border-[#0e6b7a] bg-[#e8f4f6] text-[#0e6b7a]'
+                  : 'border-[#e8e6e1] bg-white text-[#2a3541] hover:border-[#0e6b7a]'
+              }`}
             >
-              {n}
+              {n}+
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-white border border-[#e8e6e1] rounded-xl p-5">
-        <h3 className="text-[0.6rem] font-semibold tracking-[.14em] uppercase text-[#6f7680] mb-3">Preço</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="text"
-            placeholder="Mín."
-            className="w-full font-sans text-[0.78rem] px-3 py-2 border border-[#e8e6e1] rounded-md text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
-          />
-          <input
-            type="text"
-            placeholder="Máx."
-            className="w-full font-sans text-[0.78rem] px-3 py-2 border border-[#e8e6e1] rounded-md text-[#444] outline-none focus:border-[#0e6b7a] bg-white"
-          />
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="w-full bg-[#0e6b7a] text-white border-0 rounded-lg py-3 text-[0.7rem] font-semibold tracking-[.12em] uppercase cursor-pointer hover:bg-[#095260] transition-colors"
-      >
-        Aplicar
-      </button>
-
       <div className="border border-[#e8e6e1] rounded-xl p-5 text-center bg-[#faf9f7]">
-        <p className="text-[0.8rem] text-[#5a6069] mb-3 leading-relaxed">Precisa de ajuda?</p>
+        <p className="text-[0.8rem] text-[#5a6069] mb-3 leading-relaxed">
+          Não achou o que procura?
+        </p>
         <a
-          href="https://wa.me/5547991594019"
+          href="https://wa.me/5547991594019?text=Olá%2C%20preciso%20de%20ajuda%20para%20encontrar%20um%20imóvel."
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-[#0e6b7a] text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:underline underline-offset-4"
@@ -231,6 +406,15 @@ function FilterPanel({ mode }: { mode: 'venda' | 'aluguel' }) {
         </a>
       </div>
     </div>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
   )
 }
 
