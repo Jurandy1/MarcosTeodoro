@@ -61,7 +61,7 @@ const properties: Property[] = [
     gradientClass: 'g4',
     location: 'Balneário Camboriú',
     city: 'Balneário Camboriú',
-    title: 'Casa em condomínio fechado BC',
+    title: 'Casa em condomínio fechado Balneário Camboriú',
     bedrooms: 4,
     bathrooms: 4,
     parking: 3,

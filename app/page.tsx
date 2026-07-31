@@ -187,10 +187,17 @@ const MARCOS_PHOTO =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/amrcos-AyeiWeXupJzq8ST9I0UpYvAXaaRlPf.jpg'
 const MARCOS_PHOTO_2 =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/marcos-JBAkoIxvj0GDhvLLo503L00XTpnJTP.jpg'
-const HERO_BG =
-  'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Balneario-Camboriu-YDWA5F7IOLzHQrpzMPiKIvILofymQH.jpg'
 
-const WHATSAPP_BASE = 'https://wa.me/5547991594019'
+/** Números WhatsApp por faixa de investimento (DDI+DDD+número). Troque X/Y/W quando tiver os números reais. */
+const BROKER_WHATSAPP = {
+  ate1m: { name: 'Corretor X', phone: '5547991594019' },
+  de1a2: { name: 'Corretor Y', phone: '5547991594019' },
+  de2a3: { name: 'Corretor W', phone: '5547991594019' },
+  acima3m: { name: 'Marcos Teodoro', phone: '5547991594019' },
+} as const
+
+type BudgetId = keyof typeof BROKER_WHATSAPP
+type City = 'Balneário Camboriú' | 'Itapema' | 'Porto Belo' | 'Bombinhas'
 
 export default function HomePage() {
   return (
@@ -212,18 +219,19 @@ function HeroSection() {
     <section id="sobre" className="relative text-white overflow-hidden" style={{ background: '#0b1420' }}>
       <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         <Image
-          src={HERO_BG}
+          src="/hero-litoral.jpg"
           alt=""
           fill
-          className="object-cover object-[center_55%]"
           priority
           quality={90}
+          sizes="100vw"
+          className="object-cover object-center"
         />
         <div
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(105deg,rgba(11,20,32,.92) 0%,rgba(11,20,32,.78) 42%,rgba(11,20,32,.45) 100%)',
+              'linear-gradient(105deg,rgba(11,20,32,.88) 0%,rgba(11,20,32,.72) 42%,rgba(11,20,32,.4) 100%)',
           }}
         />
       </div>
@@ -231,7 +239,7 @@ function HeroSection() {
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 grid lg:grid-cols-[1fr_380px] items-end gap-6 lg:gap-12 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-14 lg:pb-16">
         <div className="order-2 lg:order-1 pb-1">
           <div className="anim-1 text-[#c9a35a] text-[0.58rem] sm:text-[0.62rem] font-semibold tracking-[.16em] sm:tracking-[.2em] uppercase mb-2.5 sm:mb-3">
-            Especialista no litoral | CRECI SC 71914
+            Consultor imobiliário | CRECI SC 71914
           </div>
           <h1
             className="anim-2 text-[2.1rem] sm:text-[2.75rem] lg:text-[3.1rem] font-medium leading-[1.08] tracking-tight mb-3"
@@ -239,9 +247,12 @@ function HeroSection() {
           >
             Marcos <span className="text-[#c9a35a]">Teodoro</span>
           </h1>
-          <p className="anim-3 text-[#c8ccd1] text-[0.86rem] sm:text-[0.92rem] leading-relaxed max-w-[42ch]">
-            Especialista em imóveis do litoral Norte de SC: Balneário Camboriú, Itapema,
-            Porto Belo e Bombinhas. Morar ou investir, com clareza.
+          <p className="anim-3 text-[#c8ccd1] text-[0.86rem] sm:text-[0.92rem] leading-relaxed max-w-[46ch] mb-3">
+            Seu patrimônio merece mais do que uma venda. Merece uma boa decisão.
+          </p>
+          <p className="anim-3 text-[#c8ccd1]/90 text-[0.84rem] sm:text-[0.9rem] leading-relaxed max-w-[46ch]">
+            Especialista em imóveis de alto padrão no litoral norte de Santa Catarina, ajudando
+            famílias e investidores a escolher imóveis com segurança, estratégia e confiança.
           </p>
         </div>
 
@@ -255,7 +266,7 @@ function HeroSection() {
             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-[0_28px_60px_rgba(0,0,0,.5)] ring-1 ring-white/10">
               <Image
                 src={MARCOS_PHOTO}
-                alt="Marcos Teodoro, Corretor de Imóveis"
+                alt="Marcos Teodoro, Consultor Imobiliário"
                 fill
                 className="object-cover object-[center_18%]"
                 priority
@@ -266,11 +277,14 @@ function HeroSection() {
                 className="absolute inset-x-0 bottom-0 p-4 pt-16"
                 style={{ background: 'linear-gradient(transparent,rgba(11,20,32,.85))' }}
               >
-                <div className="text-[0.58rem] tracking-[.18em] uppercase text-[#c9a35a] mb-0.5">
-                  Seu corretor no litoral
+                <div className="text-[0.58rem] tracking-[.14em] uppercase text-[#c9a35a] mb-1 leading-snug">
+                  O extraordinário não precisa de apresentação!
                 </div>
                 <div className="text-[0.95rem] font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
                   Marcos Teodoro
+                </div>
+                <div className="text-[0.62rem] tracking-[.12em] uppercase text-white/70 mt-0.5">
+                  Consultor imobiliário
                 </div>
               </div>
             </div>
@@ -297,7 +311,7 @@ function PropertiesCarousel() {
               Imóveis no litoral
             </h2>
             <p className="mt-1 text-[0.78rem] text-[#6f7680]">
-              BC, Itapema, Porto Belo e Bombinhas
+              Balneário Camboriú, Itapema, Porto Belo e Bombinhas
             </p>
           </div>
           <Link
@@ -374,22 +388,6 @@ function AutoScrollRow({
   )
 }
 
-type Intent = 'morar' | 'investir' | 'alugar' | 'anunciar'
-type City = 'Balneário Camboriú' | 'Itapema' | 'Porto Belo' | 'Bombinhas'
-
-const INTENT_OPTIONS: { id: Intent; label: string; hint: string }[] = [
-  { id: 'morar', label: 'Quero morar', hint: 'Encontrar meu imóvel' },
-  { id: 'investir', label: 'Quero investir', hint: 'Patrimônio no litoral' },
-  { id: 'alugar', label: 'Quero alugar', hint: 'Locação anual' },
-  { id: 'anunciar', label: 'Quero anunciar', hint: 'Vender ou alugar meu imóvel' },
-]
-
-const KIND_OPTIONS: { id: PropertyKind | 'outro'; label: string }[] = [
-  { id: 'apartamento', label: 'Apartamento' },
-  { id: 'casa', label: 'Casa' },
-  { id: 'outro', label: 'Cobertura ou outro' },
-]
-
 const CITY_OPTIONS: City[] = [
   'Balneário Camboriú',
   'Itapema',
@@ -397,18 +395,23 @@ const CITY_OPTIONS: City[] = [
   'Bombinhas',
 ]
 
+const BUDGET_OPTIONS: { id: BudgetId; label: string }[] = [
+  { id: 'ate1m', label: 'Até 1 milhão' },
+  { id: 'de1a2', label: 'De 1 milhão até 2 milhões' },
+  { id: 'de2a3', label: 'De 2 milhões a 3 milhões' },
+  { id: 'acima3m', label: 'Acima de 3 milhões' },
+]
+
 function BrokerStrip() {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  const [intent, setIntent] = useState<Intent | null>(null)
-  const [kind, setKind] = useState<PropertyKind | 'outro' | null>(null)
   const [city, setCity] = useState<City | null>(null)
+  const [budget, setBudget] = useState<BudgetId | null>(null)
 
   const reset = () => {
     setStep(0)
-    setIntent(null)
-    setKind(null)
     setCity(null)
+    setBudget(null)
   }
 
   const close = () => {
@@ -422,20 +425,20 @@ function BrokerStrip() {
   }
 
   const whatsappUrl = () => {
-    const intentLabel = INTENT_OPTIONS.find((i) => i.id === intent)?.label ?? ''
-    const kindLabel = KIND_OPTIONS.find((k) => k.id === kind)?.label ?? ''
+    if (!city || !budget) return '#'
+    const broker = BROKER_WHATSAPP[budget]
+    const budgetLabel = BUDGET_OPTIONS.find((b) => b.id === budget)?.label ?? ''
     const text = [
-      'Olá Marcos, vim pelo site.',
-      `Interesse: ${intentLabel}.`,
-      `Tipo: ${kindLabel}.`,
-      `Cidade: ${city}.`,
+      `Olá ${broker.name}, vim pelo site do Marcos Teodoro.`,
+      `Quero investir em ${city}.`,
+      `Faixa de investimento: ${budgetLabel}.`,
       'Pode me ajudar?',
     ].join(' ')
-    return `${WHATSAPP_BASE}?text=${encodeURIComponent(text)}`
+    return `https://wa.me/${broker.phone}?text=${encodeURIComponent(text)}`
   }
 
   return (
-    <section id="contato" className="bg-[#f7f5f1] border-t border-[#e8e6e1]">
+    <section id="contato" className="bg-white">
       <div className="max-w-[1200px] mx-auto px-4 py-8 sm:py-12">
         <div className="grid md:grid-cols-[200px_1fr_auto] items-center gap-5 md:gap-8">
           <div className="relative w-[120px] sm:w-[160px] md:w-full aspect-[4/5] rounded-xl overflow-hidden mx-auto md:mx-0 shadow-[0_12px_32px_rgba(11,20,32,.12)]">
@@ -460,7 +463,7 @@ function BrokerStrip() {
               Fale com Marcos Teodoro
             </h2>
             <p className="text-[0.86rem] text-[#5a6069] max-w-[46ch] mx-auto md:mx-0 leading-relaxed">
-              Responda algumas perguntas rápidas e seja direcionado com o atendimento certo.
+              Escolha a cidade e o valor do investimento para ser direcionado ao consultor certo.
             </p>
           </div>
 
@@ -501,16 +504,14 @@ function BrokerStrip() {
             <div className="flex items-start justify-between gap-3 mb-5">
               <div>
                 <div className="text-[0.55rem] font-semibold tracking-[.14em] uppercase text-[#0e6b7a] mb-1">
-                  Passo {Math.min(step + 1, 3)} de 3
+                  Passo {step + 1} de 2
                 </div>
                 <h3
                   id="contact-wizard-title"
                   className="text-[1.2rem] text-[#0b1420]"
                   style={{ fontFamily: 'var(--font-serif)' }}
                 >
-                  {step === 0 && 'O que você deseja?'}
-                  {step === 1 && 'Qual tipo de imóvel?'}
-                  {step === 2 && 'Em qual cidade?'}
+                  {step === 0 ? 'Onde você deseja comprar?' : 'Quanto quer investir?'}
                 </h3>
               </div>
               <button
@@ -525,18 +526,17 @@ function BrokerStrip() {
 
             {step === 0 && (
               <div className="grid gap-2">
-                {INTENT_OPTIONS.map((opt) => (
+                {CITY_OPTIONS.map((opt) => (
                   <button
-                    key={opt.id}
+                    key={opt}
                     type="button"
                     onClick={() => {
-                      setIntent(opt.id)
+                      setCity(opt)
                       setStep(1)
                     }}
-                    className="text-left border border-[#e8e6e1] rounded-xl px-4 py-3 hover:border-[#0e6b7a] hover:bg-[#faf9f7] transition-colors"
+                    className="text-left border border-[#e8e6e1] rounded-xl px-4 py-3 hover:border-[#0e6b7a] hover:bg-[#faf9f7] transition-colors text-[0.9rem] font-medium text-[#0b1420]"
                   >
-                    <div className="text-[0.9rem] font-medium text-[#0b1420]">{opt.label}</div>
-                    <div className="text-[0.75rem] text-[#6f7680] mt-0.5">{opt.hint}</div>
+                    {opt}
                   </button>
                 ))}
               </div>
@@ -544,56 +544,36 @@ function BrokerStrip() {
 
             {step === 1 && (
               <div className="grid gap-2">
-                {KIND_OPTIONS.map((opt) => (
+                {city && (
+                  <p className="text-[0.78rem] text-[#6f7680] mb-1">
+                    Cidade: <span className="text-[#0b1420] font-medium">{city}</span>
+                  </p>
+                )}
+                {BUDGET_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
-                    onClick={() => {
-                      setKind(opt.id)
-                      setStep(2)
-                    }}
-                    className="text-left border border-[#e8e6e1] rounded-xl px-4 py-3 hover:border-[#0e6b7a] hover:bg-[#faf9f7] transition-colors text-[0.9rem] font-medium text-[#0b1420]"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setStep(0)}
-                  className="mt-2 text-[0.72rem] text-[#6f7680] hover:text-[#0e6b7a]"
-                >
-                  Voltar
-                </button>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="grid gap-2">
-                {CITY_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setCity(opt)}
+                    onClick={() => setBudget(opt.id)}
                     className={`text-left border rounded-xl px-4 py-3 transition-colors text-[0.9rem] font-medium ${
-                      city === opt
+                      budget === opt.id
                         ? 'border-[#0e6b7a] bg-[#e8f4f6] text-[#0e6b7a]'
                         : 'border-[#e8e6e1] text-[#0b1420] hover:border-[#0e6b7a] hover:bg-[#faf9f7]'
                     }`}
                   >
-                    {opt}
+                    {opt.label}
                   </button>
                 ))}
 
                 <a
-                  href={city ? whatsappUrl() : undefined}
+                  href={budget ? whatsappUrl() : undefined}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-disabled={!city}
+                  aria-disabled={!budget}
                   onClick={(e) => {
-                    if (!city) e.preventDefault()
+                    if (!budget) e.preventDefault()
                   }}
                   className={`mt-3 inline-flex items-center justify-center rounded-full px-6 py-3 text-[0.7rem] font-semibold tracking-[.12em] uppercase min-h-[44px] transition-colors ${
-                    city
+                    budget
                       ? 'bg-[#0e6b7a] text-white hover:bg-[#095260]'
                       : 'bg-[#e8e6e1] text-[#9a9da2] pointer-events-none'
                   }`}
@@ -603,7 +583,10 @@ function BrokerStrip() {
 
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setBudget(null)
+                    setStep(0)
+                  }}
                   className="mt-1 text-[0.72rem] text-[#6f7680] hover:text-[#0e6b7a]"
                 >
                   Voltar

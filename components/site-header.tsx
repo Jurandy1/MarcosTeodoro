@@ -8,7 +8,6 @@ const navLinks = [
   { href: '/#sobre', label: 'Sobre' },
   { href: '/vendas', label: 'Vendas' },
   { href: '/aluguel', label: 'Aluguel' },
-  { href: '/#contato', label: 'Contato' },
 ]
 
 export function SiteHeader() {
@@ -43,7 +42,7 @@ export function SiteHeader() {
               MARCOS <span className="text-[#0e6b7a]">TEODORO</span>
             </div>
             <div className="text-[0.55rem] sm:text-[0.62rem] text-[#6f7680] tracking-[.08em] sm:tracking-[.14em] uppercase leading-tight mt-0.5">
-              Corretor no litoral
+              Consultor imobiliário
             </div>
           </div>
         </Link>

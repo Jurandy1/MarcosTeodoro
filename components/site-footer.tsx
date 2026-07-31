@@ -3,8 +3,7 @@ import Link from 'next/link'
 export function SiteFooter() {
   return (
     <footer className="bg-[#0b1420] text-[#a9abaf] text-[0.78rem]">
-      <div className="max-w-[1200px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 py-8 sm:py-12">
-        {/* Coluna 1: identidade */}
+      <div className="max-w-[1200px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 py-8 sm:py-12">
         <div>
           <div className="flex items-center gap-2.5 mb-4 sm:mb-5">
             <div
@@ -18,13 +17,12 @@ export function SiteFooter() {
               MARCOS <span className="text-[#c9a35a]">TEODORO</span>
             </div>
           </div>
-          <p className="text-[0.8rem] leading-relaxed text-[#8b8f96] mb-4 max-w-[28ch]">
-            Especialista em investimento imobiliário no litoral Norte de Santa Catarina.
+          <p className="text-[0.8rem] leading-relaxed text-[#8b8f96] mb-4 max-w-[32ch]">
+            Especialista em investimentos imobiliários de alto padrão no litoral norte de Santa Catarina
           </p>
           <p className="text-[0.68rem] tracking-[.1em] text-[#5a6069]">CRECI SC 71914</p>
         </div>
 
-        {/* Coluna 2: links rápidos */}
         <div>
           <h4 className="text-[0.62rem] font-bold tracking-[.28em] uppercase text-white mb-4">
             Navegação
@@ -32,46 +30,16 @@ export function SiteFooter() {
           <ul className="space-y-2.5">
             {[
               { href: '/', label: 'Início' },
-              { href: '/vendas', label: 'Imóveis à Venda' },
-              { href: '/aluguel', label: 'Imóveis para Alugar' },
+              { href: '/vendas', label: 'Apartamentos a venda' },
+              { href: '/vendas', label: 'Casas a venda' },
               { href: '/#sobre', label: 'Sobre Marcos' },
-              { href: '/#contato', label: 'Contato' },
             ].map((link) => (
-              <li key={link.href}>
+              <li key={link.label}>
                 <Link href={link.href} className="hover:text-[#c9a35a] transition-colors">
                   {link.label}
                 </Link>
               </li>
             ))}
-          </ul>
-        </div>
-
-        {/* Coluna 3: contato */}
-        <div>
-          <h4 className="text-[0.62rem] font-bold tracking-[.28em] uppercase text-white mb-4">
-            Contato
-          </h4>
-          <ul className="space-y-2.5">
-            <li>
-              <a
-                href="https://wa.me/5547991594019"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-[#c9a35a] transition-colors"
-              >
-                (47) 9 9159 4019
-              </a>
-            </li>
-            <li className="pt-1">
-              <a
-                href="https://www.instagram.com/marcosteodoro.imoveis/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-[#c9a35a] transition-colors"
-              >
-                @marcosteodoro.imoveis
-              </a>
-            </li>
           </ul>
         </div>
       </div>
@@ -80,7 +48,6 @@ export function SiteFooter() {
         &copy; {new Date().getFullYear()} Marcos Teodoro. Todos os direitos reservados.
       </div>
 
-      {/* WhatsApp flutuante */}
       <a
         href="https://wa.me/5547991594019?text=Olá%2C%20tenho%20interesse%20em%20imóveis%20no%20litoral."
         target="_blank"
