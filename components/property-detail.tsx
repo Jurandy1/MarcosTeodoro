@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { PropertyGallery } from '@/components/property-gallery'
 import { PropertyCard } from '@/components/property-card'
-import { getPropertyGallery } from '@/lib/property-images'
+import { buildMediaItems, mapsEmbedUrl, mapsExternalUrl } from '@/lib/property-images'
 import {
   getPropertiesByMode,
   type CatalogProperty,
@@ -18,12 +18,24 @@ export function PropertyDetailView({
   const basePath = mode === 'venda' ? '/vendas' : '/aluguel'
   const kindLabel = property.kind === 'apartamento' ? 'Apartamentos' : 'Casas'
   const title = property.unitName ?? property.title
-  const gallery = getPropertyGallery(
-    property.id,
-    property.images,
-    property.image,
-    property.id === 'atlantic-paradise' ? 14 : 10,
-  )
+  const media = buildMediaItems({
+    id: property.id,
+    images: property.images,
+    cover: property.image,
+    videos: property.videos,
+    fakeCount: 10,
+  })
+
+  const mapEmbed = mapsEmbedUrl({
+    lat: property.lat,
+    lng: property.lng,
+    address: property.address,
+  })
+  const mapLink = mapsExternalUrl({
+    lat: property.lat,
+    lng: property.lng,
+    address: property.address,
+  })
 
   const whatsappHref = `https://wa.me/5547991594019?text=${encodeURIComponent(
     `Olá Marcos, tenho interesse no imóvel ${title} (cód. ${property.id}).\n${property.city}\n${property.price}`,
@@ -40,7 +52,6 @@ export function PropertyDetailView({
   return (
     <div className="bg-white text-[#2a3541]">
       <div className="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-7 pb-14 sm:pb-20">
-        {/* Breadcrumb */}
         <nav className="text-[12px] text-[#8a9098] mb-4 sm:mb-5 flex flex-wrap items-center gap-1.5">
           <Link href={basePath} className="hover:text-[#0e6b7a]">
             {mode === 'venda' ? 'Imóveis à Venda' : 'Imóveis para Alugar'}
@@ -53,7 +64,6 @@ export function PropertyDetailView({
           <span className="text-[#4a5560]">{property.cityKey}</span>
         </nav>
 
-        {/* Title */}
         <header className="mb-5 sm:mb-6 max-w-[820px]">
           <h1 className="text-[1.5rem] sm:text-[1.85rem] lg:text-[2rem] font-semibold text-[#111827] leading-[1.25] tracking-[-0.01em]">
             {title}
@@ -66,9 +76,8 @@ export function PropertyDetailView({
           </p>
         </header>
 
-        {/* Gallery + CTA column */}
         <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-5 lg:gap-7 items-start mb-12 lg:mb-16">
-          <PropertyGallery images={gallery} title={title} />
+          <PropertyGallery media={media} title={title} />
 
           <aside className="border border-[#e5e7eb] bg-white">
             <div className="p-5 sm:p-6">
@@ -163,7 +172,6 @@ export function PropertyDetailView({
           </aside>
         </div>
 
-        {/* Details */}
         <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-10 lg:gap-7">
           <div className="max-w-[720px]">
             <section className="mb-10">
@@ -219,15 +227,40 @@ export function PropertyDetailView({
               </section>
             )}
 
-            {property.address && (
-              <section>
-                <h2 className="text-[15px] font-semibold text-[#111827] mb-3">Localização</h2>
-                <p className="text-[15px] text-[#4b5563]">{property.address}</p>
+            {(property.address || mapEmbed) && (
+              <section className="mb-4">
+                <div className="flex items-end justify-between gap-3 mb-3">
+                  <h2 className="text-[15px] font-semibold text-[#111827]">Localização</h2>
+                  {mapLink && (
+                    <a
+                      href={mapLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[12px] font-semibold tracking-[0.06em] uppercase text-[#0e6b7a] hover:text-[#095260]"
+                    >
+                      Abrir no Maps
+                    </a>
+                  )}
+                </div>
+                {property.address && (
+                  <p className="text-[15px] text-[#4b5563] mb-4">{property.address}</p>
+                )}
+                {mapEmbed && (
+                  <div className="relative w-full aspect-[16/10] sm:aspect-[21/9] overflow-hidden border border-[#e5e7eb] bg-[#f3f4f6]">
+                    <iframe
+                      title={`Mapa — ${title}`}
+                      src={mapEmbed}
+                      className="absolute inset-0 w-full h-full border-0"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
               </section>
             )}
           </div>
 
-          {/* Spacer matching sidebar width on desktop for alignment with gallery column */}
           <div className="hidden lg:block" aria-hidden />
         </div>
 

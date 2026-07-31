@@ -1,4 +1,16 @@
-/** Imagens fake (Unsplash) para portfólio até as fotos reais chegarem */
+/** Tipos e helpers de mídia (fotos em massa + vídeo) */
+
+export type MediaItem =
+  | { type: 'image'; src: string; alt?: string }
+  | {
+      type: 'video'
+      /** URL do arquivo mp4 ou ID/URL do YouTube/Vimeo */
+      src: string
+      poster?: string
+      provider?: 'file' | 'youtube' | 'vimeo'
+      label?: string
+    }
+
 export const FAKE_PROPERTY_IMAGES = [
   'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1400&q=80',
   'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=80',
@@ -31,7 +43,17 @@ export function getFakePropertyImage(id: string, explicit?: string) {
   return FAKE_PROPERTY_IMAGES[hashId(id) % FAKE_PROPERTY_IMAGES.length]
 }
 
-/** Monta galeria: usa fotos reais se houver; senão gera N imagens fake estáveis por id */
+/** Gera N fotos fake (suporta 60+) reutilizando o banco de imagens */
+export function buildFakeImageList(id: string, count: number, cover?: string): string[] {
+  const start = hashId(id) % FAKE_PROPERTY_IMAGES.length
+  const list: string[] = []
+  for (let i = 0; i < count; i++) {
+    list.push(FAKE_PROPERTY_IMAGES[(start + i) % FAKE_PROPERTY_IMAGES.length])
+  }
+  if (cover) list[0] = cover
+  return list
+}
+
 export function getPropertyGallery(
   id: string,
   images?: string[],
@@ -39,15 +61,84 @@ export function getPropertyGallery(
   count = 12,
 ) {
   if (images && images.length > 0) {
-    const list = cover && !images.includes(cover) ? [cover, ...images] : [...images]
-    return list
+    return cover && !images.includes(cover) ? [cover, ...images] : [...images]
+  }
+  return buildFakeImageList(id, count, cover)
+}
+
+export function youtubeEmbedUrl(src: string) {
+  if (src.includes('youtube.com/embed/')) return src
+  const idMatch =
+    src.match(/youtu\.be\/([^?&]+)/)?.[1] ||
+    src.match(/[?&]v=([^?&]+)/)?.[1] ||
+    src.match(/youtube\.com\/shorts\/([^?&]+)/)?.[1] ||
+    (!src.includes('/') && !src.includes('.') ? src : null)
+  if (!idMatch) return src
+  return `https://www.youtube.com/embed/${idMatch}?rel=0`
+}
+
+export function youtubeThumb(src: string) {
+  const idMatch =
+    src.match(/youtu\.be\/([^?&]+)/)?.[1] ||
+    src.match(/[?&]v=([^?&]+)/)?.[1] ||
+    src.match(/embed\/([^?&]+)/)?.[1] ||
+    src.match(/shorts\/([^?&]+)/)?.[1] ||
+    (!src.includes('/') && !src.includes('.') ? src : null)
+  if (!idMatch) return undefined
+  return `https://i.ytimg.com/vi/${idMatch}/hqdefault.jpg`
+}
+
+export function mapsEmbedUrl(opts: {
+  lat?: number
+  lng?: number
+  address?: string
+}) {
+  if (opts.lat != null && opts.lng != null) {
+    return `https://maps.google.com/maps?q=${opts.lat},${opts.lng}&z=15&output=embed`
+  }
+  if (opts.address) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(opts.address)}&z=15&output=embed`
+  }
+  return null
+}
+
+export function mapsExternalUrl(opts: {
+  lat?: number
+  lng?: number
+  address?: string
+}) {
+  if (opts.lat != null && opts.lng != null) {
+    return `https://www.google.com/maps?q=${opts.lat},${opts.lng}`
+  }
+  if (opts.address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(opts.address)}`
+  }
+  return null
+}
+
+/** Une fotos + vídeos em uma lista única de mídia */
+export function buildMediaItems(opts: {
+  id: string
+  images?: string[]
+  cover?: string
+  videos?: MediaItem[]
+  /** se não houver images, gera esta quantidade de fotos fake */
+  fakeCount?: number
+}): MediaItem[] {
+  const photos = getPropertyGallery(opts.id, opts.images, opts.cover, opts.fakeCount ?? 12)
+  const items: MediaItem[] = photos.map((src) => ({ type: 'image', src }))
+
+  if (opts.videos?.length) {
+    // Vídeos no início (após a capa) — padrão de portais imobiliários
+    const videos = opts.videos.map((v) =>
+      v.type === 'video'
+        ? v
+        : ({ type: 'video', src: String((v as { src?: string }).src ?? '') } as MediaItem),
+    )
+    const cover = items[0]
+    const rest = items.slice(1)
+    return [cover, ...videos, ...rest].filter(Boolean)
   }
 
-  const start = hashId(id) % FAKE_PROPERTY_IMAGES.length
-  const gallery: string[] = []
-  for (let i = 0; i < count; i++) {
-    gallery.push(FAKE_PROPERTY_IMAGES[(start + i) % FAKE_PROPERTY_IMAGES.length])
-  }
-  if (cover) gallery[0] = cover
-  return gallery
+  return items
 }

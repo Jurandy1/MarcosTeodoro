@@ -1,4 +1,6 @@
 import type { Property } from '@/components/property-card'
+import type { MediaItem } from '@/lib/property-images'
+import { buildFakeImageList } from '@/lib/property-images'
 
 export type PropertyKind = 'apartamento' | 'casa'
 export type PropertyMode = 'venda' | 'aluguel'
@@ -16,8 +18,13 @@ export interface CatalogProperty extends Property {
   unitFeatures?: string[]
   amenities?: string[]
   address?: string
-  /** Galeria de fotos (quando houver muitas) */
+  /** Galeria de fotos (suporta 60+) */
   images?: string[]
+  /** Vídeos do imóvel (arquivo, YouTube ou Vimeo) */
+  videos?: Extract<MediaItem, { type: 'video' }>[]
+  /** Coordenadas para o mapa */
+  lat?: number
+  lng?: number
   /** valor numérico para ordenar/filtrar (sem R$) */
   priceValue?: number
 }
@@ -54,6 +61,18 @@ export const properties: CatalogProperty[] = [
     entrada: 'R$ 5.368.000,00',
     parcelamento: '48 x R$ 167.750,00',
     address: 'Avenida Nereu Ramos 5055, Itapema/SC',
+    lat: -27.0909,
+    lng: -48.6111,
+    // Demonstra galeria com muitas fotos (60+)
+    images: buildFakeImageList('atlantic-paradise', 64),
+    videos: [
+      {
+        type: 'video',
+        provider: 'youtube',
+        src: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
+        label: 'Tour pelo empreendimento',
+      },
+    ],
     unitFeatures: [
       'Home Office',
       'Living',
