@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 
 const navLinks = [
   { href: '/vendas?tipo=apartamento', label: 'Apartamentos a venda' },
@@ -15,15 +15,21 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    setOpen(false)
+    startTransition(() => setOpen(false))
   }, [pathname])
 
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = ''
+      document.body.style.overflow = prev
     }
   }, [open])
+
+  const closeMenu = () => {
+    startTransition(() => setOpen(false))
+  }
 
   return (
     <header className="bg-white/95 backdrop-blur-md border-b border-[#e6e2da] sticky top-0 z-50">
@@ -73,14 +79,14 @@ export function SiteHeader() {
 
       {open && (
         <div id="mobile-menu" className="md:hidden border-t border-[#e6e2da] bg-white">
-          <nav aria-label="Menu mobile" className="px-4 py-4">
-            <ul className="flex flex-col gap-1 list-none">
+          <nav aria-label="Menu mobile" className="px-4 py-3">
+            <ul className="flex flex-col list-none">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    onClick={() => setOpen(false)}
-                    className="block rounded-xl px-4 py-3.5 text-[0.8rem] font-semibold tracking-[.1em] uppercase transition-colors min-h-[44px] text-[#4a5560] hover:bg-[#f4f2ee] hover:text-[#0e6b7a]"
+                    onClick={closeMenu}
+                    className="block px-3 py-3 text-[0.8rem] font-semibold tracking-[.1em] uppercase text-[#4a5560] active:text-[#0e6b7a]"
                   >
                     {link.label}
                   </Link>
