@@ -124,67 +124,15 @@
 .anim-3 { animation: fadeUp 0.9s cubic-bezier(.2,.7,.2,1) 0.35s both; }
 .anim-4 { animation: fadeUp 0.9s cubic-bezier(.2,.7,.2,1) 0.5s both; }
 
-.auto-scroll-track {
-  display: flex;
-  width: max-content;
-  gap: 1rem;
-  padding-inline: 1rem;
-  animation: marquee 48s linear infinite;
-  will-change: transform;
+.auto-scroll-rail::-webkit-scrollbar {
+  display: none;
 }
-.auto-scroll-track.reverse {
-  animation-name: marqueeR;
-  animation-duration: 52s;
-}
-.auto-scroll-track:hover,
-.auto-scroll-track:active {
-  animation-play-state: paused;
-}
-/* Touch devices sem hover: dá controle real de scroll ao usuário em vez de marquee que arrasta o card antes de ler. */
-@media (hover: none) and (pointer: coarse) {
-  .auto-scroll-track {
-    animation: none;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    width: 100%;
-    max-width: 100%;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .auto-scroll-track::-webkit-scrollbar {
-    display: none;
-  }
-  .auto-scroll-track > * {
-    scroll-snap-align: start;
-  }
-}
-@media (min-width: 1024px) {
-  .auto-scroll-track {
-    gap: 1.25rem;
-    padding-inline: 1.5rem;
-    animation-duration: 56s;
-  }
-  .auto-scroll-track.reverse {
-    animation-duration: 60s;
-  }
-}
-@media (max-width: 640px) {
-  .auto-scroll-track {
-    gap: 0.625rem;
-    padding-inline: 0.875rem;
-    animation-duration: 38s;
-  }
-  .auto-scroll-track.reverse {
-    animation-duration: 42s;
-  }
-}
+
 @media (prefers-reduced-motion: reduce) {
-  .auto-scroll-track {
-    animation: none;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    width: 100%;
-    max-width: 100%;
+  .auto-scroll-rail {
+    scroll-snap-type: x mandatory;
+  }
+  .auto-scroll-rail > * {
+    scroll-snap-align: start;
   }
 }

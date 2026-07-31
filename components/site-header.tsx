@@ -1,12 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+
+const navLinks = [
+  { href: '/vendas?tipo=apartamento', label: 'Apartamentos a venda' },
+  { href: '/vendas?tipo=casa', label: 'Casas a venda' },
+  { href: '/#sobre', label: 'Sobre' },
+]
 
 export function SiteHeader() {
   const pathname = usePathname()
-  const router = useRouter()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -19,16 +24,6 @@ export function SiteHeader() {
       document.body.style.overflow = ''
     }
   }, [open])
-
-  const openContato = () => {
-    setOpen(false)
-    if (pathname === '/') {
-      document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })
-      window.dispatchEvent(new Event('marcos:open-contato'))
-      return
-    }
-    router.push('/#contato')
-  }
 
   return (
     <header className="bg-white/95 backdrop-blur-md border-b border-[#e6e2da] sticky top-0 z-50">
@@ -51,31 +46,14 @@ export function SiteHeader() {
         </Link>
 
         <nav aria-label="Navegação principal" className="hidden md:block">
-          <ul className="flex items-center gap-6 list-none text-[0.72rem] font-semibold tracking-[.14em] uppercase text-[#4a5560]">
-            <li>
-              <Link href="/vendas?tipo=apartamento" className="transition-colors hover:text-[#0e6b7a]">
-                Apartamentos
-              </Link>
-            </li>
-            <li>
-              <Link href="/vendas?tipo=casa" className="transition-colors hover:text-[#0e6b7a]">
-                Casas
-              </Link>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={openContato}
-                className="transition-colors hover:text-[#0e6b7a] uppercase tracking-[.14em] font-semibold text-[0.72rem] cursor-pointer"
-              >
-                Contato
-              </button>
-            </li>
-            <li>
-              <Link href="/#sobre" className="transition-colors hover:text-[#0e6b7a]">
-                Sobre
-              </Link>
-            </li>
+          <ul className="flex items-center gap-5 lg:gap-6 list-none text-[0.68rem] lg:text-[0.72rem] font-semibold tracking-[.1em] lg:tracking-[.12em] uppercase text-[#4a5560]">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="transition-colors hover:text-[#0e6b7a] whitespace-nowrap">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
 
@@ -97,42 +75,17 @@ export function SiteHeader() {
         <div id="mobile-menu" className="md:hidden border-t border-[#e6e2da] bg-white">
           <nav aria-label="Menu mobile" className="px-4 py-4">
             <ul className="flex flex-col gap-1 list-none">
-              <li>
-                <Link
-                  href="/vendas?tipo=apartamento"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-xl px-4 py-3.5 text-[0.8rem] font-semibold tracking-[.12em] uppercase transition-colors min-h-[44px] text-[#4a5560] hover:bg-[#f4f2ee] hover:text-[#0e6b7a]"
-                >
-                  Apartamentos
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/vendas?tipo=casa"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-xl px-4 py-3.5 text-[0.8rem] font-semibold tracking-[.12em] uppercase transition-colors min-h-[44px] text-[#4a5560] hover:bg-[#f4f2ee] hover:text-[#0e6b7a]"
-                >
-                  Casas
-                </Link>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={openContato}
-                  className="w-full text-left block rounded-xl px-4 py-3.5 text-[0.8rem] font-semibold tracking-[.12em] uppercase transition-colors min-h-[44px] text-[#4a5560] hover:bg-[#f4f2ee] hover:text-[#0e6b7a] cursor-pointer"
-                >
-                  Contato
-                </button>
-              </li>
-              <li>
-                <Link
-                  href="/#sobre"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-xl px-4 py-3.5 text-[0.8rem] font-semibold tracking-[.12em] uppercase transition-colors min-h-[44px] text-[#4a5560] hover:bg-[#f4f2ee] hover:text-[#0e6b7a]"
-                >
-                  Sobre
-                </Link>
-              </li>
+              {navLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-xl px-4 py-3.5 text-[0.8rem] font-semibold tracking-[.1em] uppercase transition-colors min-h-[44px] text-[#4a5560] hover:bg-[#f4f2ee] hover:text-[#0e6b7a]"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>
