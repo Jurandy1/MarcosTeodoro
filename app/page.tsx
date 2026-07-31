@@ -248,7 +248,9 @@ function HeroSection() {
             Marcos <span className="text-[#c9a35a]">Teodoro</span>
           </h1>
           <p className="anim-3 text-[#c8ccd1] text-[0.86rem] sm:text-[0.92rem] leading-relaxed max-w-[46ch] mb-3">
-            Seu patrimônio merece mais do que uma venda. Merece uma boa decisão.
+            Seu patrimônio merece mais do que uma venda.
+            <br />
+            Merece uma boa decisão.
           </p>
           <p className="anim-3 text-[#c8ccd1]/90 text-[0.84rem] sm:text-[0.9rem] leading-relaxed max-w-[46ch]">
             Especialista em imóveis de alto padrão no litoral norte de Santa Catarina, ajudando
