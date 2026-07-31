@@ -113,8 +113,8 @@
 .auto-scroll-track {
   display: flex;
   width: max-content;
-  gap: 0.75rem;
-  padding-inline: 0.875rem;
+  gap: 1rem;
+  padding-inline: 1rem;
   animation: marquee 48s linear infinite;
   will-change: transform;
 }
@@ -125,9 +125,20 @@
 .auto-scroll-track:hover {
   animation-play-state: paused;
 }
+@media (min-width: 1024px) {
+  .auto-scroll-track {
+    gap: 1.25rem;
+    padding-inline: 1.5rem;
+    animation-duration: 56s;
+  }
+  .auto-scroll-track.reverse {
+    animation-duration: 60s;
+  }
+}
 @media (max-width: 640px) {
   .auto-scroll-track {
     gap: 0.625rem;
+    padding-inline: 0.875rem;
     animation-duration: 38s;
   }
   .auto-scroll-track.reverse {

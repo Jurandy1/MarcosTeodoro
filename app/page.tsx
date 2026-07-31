@@ -299,9 +299,9 @@ function PropertiesCarousel() {
   const houses = allProperties.filter((p) => p.kind === 'casa')
 
   return (
-    <section className="bg-[#f7f5f1] border-y border-[#ebe8e2]">
-      <div className="max-w-[1100px] mx-auto px-4 py-7 sm:py-9">
-        <div className="flex items-end justify-between gap-4 mb-6 sm:mb-7">
+    <section className="bg-[#f7f5f1] border-y border-[#ebe8e2] overflow-hidden">
+      <div className="max-w-[1200px] mx-auto px-4 pt-8 sm:pt-10 pb-5 sm:pb-6">
+        <div className="flex items-end justify-between gap-4">
           <div>
             <h2
               className="text-[1.35rem] sm:text-[1.55rem] text-[#0b1420] leading-tight"
@@ -320,11 +320,11 @@ function PropertiesCarousel() {
             Ver todos
           </Link>
         </div>
+      </div>
 
-        <div className="space-y-5 sm:space-y-6">
-          <AutoScrollRow title="Apartamentos" href="/vendas" properties={apartments} />
-          <AutoScrollRow title="Casas" href="/vendas" properties={houses} reverse />
-        </div>
+      <div className="space-y-6 sm:space-y-8 pb-8 sm:pb-11">
+        <AutoScrollRow title="Apartamentos" href="/vendas" properties={apartments} />
+        <AutoScrollRow title="Casas" href="/vendas" properties={houses} reverse />
       </div>
     </section>
   )
@@ -345,7 +345,7 @@ function AutoScrollRow({
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-2.5">
+      <div className="max-w-[1200px] mx-auto px-4 flex items-center justify-between gap-3 mb-3">
         <h3 className="text-[0.72rem] font-semibold tracking-[.14em] uppercase text-[#0b1420]">
           {title}
         </h3>
@@ -357,22 +357,25 @@ function AutoScrollRow({
         </Link>
       </div>
 
-      <div className="relative rounded-xl bg-white border border-[#ebe8e2] overflow-hidden">
+      <div className="relative">
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-6 z-10"
-          style={{ background: 'linear-gradient(90deg,#fff 20%,transparent)' }}
+          className="pointer-events-none absolute inset-y-0 left-0 w-8 sm:w-16 z-10"
+          style={{ background: 'linear-gradient(90deg,#f7f5f1 15%,transparent)' }}
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 w-6 z-10"
-          style={{ background: 'linear-gradient(270deg,#fff 20%,transparent)' }}
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 z-10"
+          style={{ background: 'linear-gradient(270deg,#f7f5f1 15%,transparent)' }}
           aria-hidden="true"
         />
 
-        <div className="overflow-hidden py-3">
+        <div className="overflow-hidden">
           <div className={`auto-scroll-track ${reverse ? 'reverse' : ''}`}>
             {loop.map((p, i) => (
-              <div key={`${p.id}-${i}`} className="shrink-0 w-[240px] sm:w-[270px]">
+              <div
+                key={`${p.id}-${i}`}
+                className="shrink-0 w-[240px] sm:w-[280px] lg:w-[300px]"
+              >
                 <PropertyCard
                   compact
                   property={p}
