@@ -231,7 +231,7 @@ function HeroSection() {
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(105deg,rgba(11,20,32,.88) 0%,rgba(11,20,32,.72) 42%,rgba(11,20,32,.4) 100%)',
+              'linear-gradient(105deg,rgba(14,107,122,.55) 0%,rgba(11,20,32,.45) 45%,rgba(11,20,32,.2) 100%)',
           }}
         />
       </div>
