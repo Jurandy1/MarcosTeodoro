@@ -275,16 +275,13 @@ function HeroSection() {
               />
               <div
                 className="absolute inset-x-0 bottom-0 p-4 pt-16"
-                style={{ background: 'linear-gradient(transparent,rgba(11,20,32,.85))' }}
+                style={{ background: 'linear-gradient(transparent,rgba(11,20,32,.9))' }}
               >
-                <div className="text-[0.58rem] tracking-[.14em] uppercase text-[#c9a35a] mb-1 leading-snug">
+                <div className="text-[0.62rem] sm:text-[0.68rem] font-semibold tracking-[.12em] uppercase text-white mb-1.5 leading-snug drop-shadow-[0_2px_6px_rgba(0,0,0,.75)]">
                   O extraordinário não precisa de apresentação!
                 </div>
-                <div className="text-[0.95rem] font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
+                <div className="text-[0.95rem] font-medium text-white" style={{ fontFamily: 'var(--font-serif)' }}>
                   Marcos Teodoro
-                </div>
-                <div className="text-[0.62rem] tracking-[.12em] uppercase text-white/70 mt-0.5">
-                  Consultor imobiliário
                 </div>
               </div>
             </div>
