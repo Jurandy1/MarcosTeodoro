@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { BrokerStrip } from '@/components/broker-strip'
 import { AutoScrollRow } from '@/components/auto-scroll-row'
-import { getPropertiesByMode } from '@/lib/properties'
+import { fetchPublicProperties } from '@/lib/supabase/public-properties'
 
 const MARCOS_PHOTO =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/amrcos-AyeiWeXupJzq8ST9I0UpYvAXaaRlPf.jpg'
@@ -101,10 +101,14 @@ function HeroSection() {
   )
 }
 
-function PropertiesCarousel() {
-  const sale = getPropertiesByMode('venda')
+async function PropertiesCarousel() {
+  const sale = await fetchPublicProperties('venda')
   const apartments = sale.filter((p) => p.kind === 'apartamento')
   const houses = sale.filter((p) => p.kind === 'casa')
+
+  if (apartments.length === 0 && houses.length === 0) {
+    return null
+  }
 
   return (
     <section className="bg-[#f7f5f1] border-y border-[#ebe8e2] overflow-hidden">
@@ -128,19 +132,23 @@ function PropertiesCarousel() {
       </div>
 
       <div className="space-y-6 sm:space-y-8 pb-8 sm:pb-11">
-        <AutoScrollRow
-          id="apartamentos"
-          title="Apartamentos"
-          href="/vendas?tipo=apartamento"
-          properties={apartments}
-        />
-        <AutoScrollRow
-          id="casas"
-          title="Casas"
-          href="/vendas?tipo=casa"
-          properties={houses}
-          reverse
-        />
+        {apartments.length > 0 && (
+          <AutoScrollRow
+            id="apartamentos"
+            title="Apartamentos"
+            href="/vendas?tipo=apartamento"
+            properties={apartments}
+          />
+        )}
+        {houses.length > 0 && (
+          <AutoScrollRow
+            id="casas"
+            title="Casas"
+            href="/vendas?tipo=casa"
+            properties={houses}
+            reverse
+          />
+        )}
       </div>
     </section>
   )

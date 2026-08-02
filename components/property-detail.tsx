@@ -2,18 +2,16 @@ import Link from 'next/link'
 import { PropertyGallery } from '@/components/property-gallery'
 import { PropertyCard } from '@/components/property-card'
 import { buildMediaItems, mapsEmbedUrl, mapsExternalUrl } from '@/lib/property-images'
-import {
-  getPropertiesByMode,
-  type CatalogProperty,
-  type PropertyMode,
-} from '@/lib/properties'
+import { type CatalogProperty, type PropertyMode } from '@/lib/properties'
 
 export function PropertyDetailView({
   property,
   mode,
+  similar = [],
 }: {
   property: CatalogProperty
   mode: PropertyMode
+  similar?: CatalogProperty[]
 }) {
   const basePath = mode === 'venda' ? '/vendas' : '/aluguel'
   const kindLabel = property.kind === 'apartamento' ? 'Apartamentos' : 'Casas'
@@ -24,7 +22,7 @@ export function PropertyDetailView({
     cover: property.coverPath || property.image,
     imageAssets: property.imageAssets,
     videos: property.videos,
-    fakeCount: 10,
+    fakeCount: 0,
   })
 
   const mapEmbed = mapsEmbedUrl({
@@ -41,10 +39,6 @@ export function PropertyDetailView({
   const whatsappHref = `https://wa.me/5547991594019?text=${encodeURIComponent(
     `Olá Marcos, tenho interesse no imóvel ${title} (cód. ${property.id}).\n${property.city}\n${property.price}`,
   )}`
-
-  const similar = getPropertiesByMode(mode)
-    .filter((p) => p.id !== property.id && p.kind === property.kind)
-    .slice(0, 4)
 
   const areaPrivate =
     property.areaPrivate ?? (typeof property.area === 'number' ? property.area : null)

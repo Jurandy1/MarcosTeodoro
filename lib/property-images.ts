@@ -82,6 +82,9 @@ export function getPropertyGallery(
       ? [coverUrl, ...resolved]
       : resolved
   }
+  if (count <= 0) {
+    return cover ? [resolveMediaSrc(cover)] : []
+  }
   const coverUrl = cover ? resolveMediaSrc(cover) : undefined
   return buildFakeImageList(id, count, coverUrl)
 }

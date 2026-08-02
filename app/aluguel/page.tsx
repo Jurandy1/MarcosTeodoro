@@ -3,7 +3,7 @@ import { Topbar } from '@/components/topbar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { ListingLayout } from '@/components/listing-layout'
-import { getPropertiesByMode } from '@/lib/properties'
+import { fetchPublicProperties } from '@/lib/supabase/public-properties'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
     'Imóveis para locação anual no litoral Norte de Santa Catarina. Apartamentos e casas em Balneário Camboriú, Itapema e Porto Belo.',
 }
 
-export default function AluguelPage() {
-  const properties = getPropertiesByMode('aluguel')
+export default async function AluguelPage() {
+  const properties = await fetchPublicProperties('aluguel')
 
   return (
     <>

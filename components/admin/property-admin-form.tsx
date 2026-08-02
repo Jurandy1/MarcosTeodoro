@@ -25,6 +25,7 @@ import {
   fetchUnidadesDb,
   saveAdminPropertyDb,
 } from '@/lib/supabase/properties-api'
+import { importDwvGallery } from '@/lib/supabase/import-dwv'
 import { removePropertyPhoto, uploadPropertyPhotos } from '@/lib/supabase/storage'
 
 type FormState = {
@@ -203,7 +204,11 @@ function detectedChips(parsed: ParsedListing): string[] {
   if (parsed.address) chips.push('Endereço')
   if (parsed.cep) chips.push('CEP')
   if (parsed.cityKey) chips.push(parsed.cityKey)
-  if (parsed.sourceUrl) chips.push('Link DWV')
+  if (parsed.dwvGalleryId || parsed.sourceUrl?.includes('dwvapp.com.br')) {
+    chips.push('Link DWV')
+  } else if (parsed.sourceUrl) {
+    chips.push('Link')
+  }
   return chips
 }
 
@@ -411,20 +416,23 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
     }
   }
 
-  const applyText = (text: string) => {
+  const applyText = async (text: string) => {
     const parsed = parseListingPaste(text)
     if (
       !parsed.empreendimento &&
       !parsed.unitName &&
       !parsed.price &&
       !parsed.address &&
-      !parsed.cep
+      !parsed.cep &&
+      !parsed.dwvGalleryId
     ) {
-      setToast('Não reconheci o formato. Cole o anúncio completo.')
+      setToast('Não reconheci o formato. Cole o anúncio completo (com ou sem link DWV).')
       setChips([])
       return false
     }
-    setForm((f) => mergeParsed(f, parsed))
+
+    const merged = mergeParsed(form, parsed)
+    setForm(merged)
     setChips(detectedChips(parsed))
     if (parsed.empreendimento || parsed.unitName) {
       const emp = parsed.empreendimento || parsed.unitName || ''
@@ -439,27 +447,72 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
         )
       }
     }
-    setToast('Preenchido automaticamente. Revise e adicione as fotos.')
 
     if (parsed.cep && isCompleteCep(parsed.cep)) {
-      void applyCep(parsed.cep, { silent: true }).then(() => {
-        setToast('Anúncio + CEP aplicados. Revise e adicione as fotos.')
-      })
+      void applyCep(parsed.cep, { silent: true })
     } else if (parsed.address) {
-      void applyGeocode(parsed.address, { silent: true }).then(() => {
-        setToast('Anúncio + endereço identificados. Revise e adicione as fotos.')
-      })
+      void applyGeocode(parsed.address, { silent: true })
     }
+
+    if (parsed.dwvGalleryId && parsed.sourceUrl) {
+      const propertyId = merged.id.trim() || uploadFolder
+      setBusyPhotos(true)
+      setPhotoProgress('Importando fotos da DWV…')
+      setToast('Anúncio aplicado. Baixando fotos da DWV para o Storage…')
+      try {
+        const result = await importDwvGallery({
+          galleryUrl: parsed.sourceUrl,
+          propertyId,
+          replacePhotos: true,
+        })
+        const images = result.images ?? []
+        setForm((f) => ({
+          ...f,
+          id: result.propertyId || f.id || propertyId,
+          sourceUrl: parsed.sourceUrl || f.sourceUrl,
+          empreendimento: f.empreendimento || result.title?.trim() || f.empreendimento,
+          title: f.title || result.title?.trim() || f.title,
+          images: images.length > 0 ? images : f.images,
+        }))
+        if (result.title?.trim()) {
+          setEmpOptions((prev) =>
+            Array.from(new Set([...prev, result.title!.trim()])).sort((a, b) =>
+              a.localeCompare(b, 'pt-BR'),
+            ),
+          )
+        }
+        setChips((c) =>
+          Array.from(new Set([...c, `Fotos DWV (${result.total_fotos ?? images.length})`])),
+        )
+        const falhas = result.falhas ?? 0
+        setToast(
+          falhas > 0
+            ? `${result.total_fotos ?? 0} fotos importadas (${falhas} falha(s)). Revise e salve.`
+            : `${result.total_fotos ?? images.length} fotos importadas da DWV. Revise e salve.`,
+        )
+      } catch (e) {
+        setToast(
+          e instanceof Error
+            ? `Dados preenchidos, mas falha ao importar fotos: ${e.message}`
+            : 'Dados preenchidos, mas falha ao importar fotos da DWV.',
+        )
+      } finally {
+        setBusyPhotos(false)
+        setPhotoProgress(null)
+      }
+    } else {
+      setToast('Preenchido automaticamente. Revise e adicione as fotos.')
+    }
+
     return true
   }
 
   const onPasteArea = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     const text = e.clipboardData.getData('text')
     if (!text.trim()) return
-    // Deixa o texto aparecer e processa em seguida
     setTimeout(() => {
       setPaste(text)
-      applyText(text)
+      void applyText(text)
     }, 0)
   }
 
@@ -653,7 +706,8 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                   1. Cole o anúncio
                 </h2>
                 <p className="mt-1 text-[0.82rem] text-[#6f7680]">
-                  Ctrl+V aqui — o sistema preenche sozinho.
+                  Ctrl+V aqui — preenche os campos e, se houver link DWV, importa as fotos
+                  automaticamente para o Storage.
                 </p>
               </div>
               {chips.length > 0 && (
@@ -674,10 +728,11 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => applyText(paste)}
-                className="min-h-[40px] px-4 bg-[#0e6b7a] text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:bg-[#095260]"
+                onClick={() => void applyText(paste)}
+                disabled={busyPhotos}
+                className="min-h-[40px] px-4 bg-[#0e6b7a] text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:bg-[#095260] disabled:opacity-50"
               >
-                Preencher agora
+                {busyPhotos ? photoProgress || 'Importando…' : 'Preencher agora'}
               </button>
               <button
                 type="button"
@@ -867,6 +922,43 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                 <div className="sm:col-span-2">
                   <label className={label}>Link DWV</label>
                   <input className={field} value={form.sourceUrl} onChange={set('sourceUrl')} />
+                  {form.sourceUrl.includes('dwvapp.com.br') && (
+                    <button
+                      type="button"
+                      disabled={busyPhotos}
+                      onClick={() => {
+                        void (async () => {
+                          setBusyPhotos(true)
+                          setPhotoProgress('Importando fotos da DWV…')
+                          try {
+                            const result = await importDwvGallery({
+                              galleryUrl: form.sourceUrl,
+                              propertyId: form.id.trim() || uploadFolder,
+                              replacePhotos: true,
+                            })
+                            const images = result.images ?? []
+                            setForm((f) => ({
+                              ...f,
+                              images: images.length > 0 ? images : f.images,
+                            }))
+                            setToast(
+                              `${result.total_fotos ?? images.length} fotos importadas da DWV.`,
+                            )
+                          } catch (e) {
+                            setToast(
+                              e instanceof Error ? e.message : 'Falha ao importar fotos DWV.',
+                            )
+                          } finally {
+                            setBusyPhotos(false)
+                            setPhotoProgress(null)
+                          }
+                        })()
+                      }}
+                      className="mt-2 min-h-[36px] px-3 text-[0.65rem] font-semibold tracking-[.1em] uppercase bg-[#e8f4f6] text-[#0e6b7a] hover:bg-[#d5eef2] disabled:opacity-50"
+                    >
+                      Reimportar fotos deste link
+                    </button>
+                  )}
                 </div>
               </div>
             </details>

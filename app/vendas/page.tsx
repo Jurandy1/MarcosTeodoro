@@ -3,7 +3,7 @@ import { Topbar } from '@/components/topbar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { ListingLayout } from '@/components/listing-layout'
-import { getPropertiesByMode } from '@/lib/properties'
+import { fetchPublicProperties } from '@/lib/supabase/public-properties'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
     'Apartamentos e casas à venda no litoral de Santa Catarina: Balneário Camboriú, Itapema, Porto Belo e Bombinhas.',
 }
 
-export default function VendasPage() {
-  const properties = getPropertiesByMode('venda')
+export default async function VendasPage() {
+  const properties = await fetchPublicProperties('venda')
 
   return (
     <>

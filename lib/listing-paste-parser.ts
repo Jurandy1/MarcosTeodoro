@@ -41,8 +41,19 @@ export interface ParsedListing {
   location?: string
   cep?: string
   sourceUrl?: string
+  /** UUID do tracked link DWV (lp.dwvapp.com.br/{uuid}) */
+  dwvGalleryId?: string
   kind?: 'apartamento' | 'casa'
   mode?: 'venda' | 'aluguel'
+}
+
+/** Extrai trackedLinkId de URLs dwvapp.com.br / lp.dwvapp.com.br */
+export const DWV_UUID_REGEX =
+  /dwvapp\.com\.br\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+
+export function extractDwvGalleryId(mensagem: string): string | null {
+  const match = mensagem.match(DWV_UUID_REGEX)
+  return match?.[1] ?? null
 }
 
 function cleanStars(s: string) {
@@ -206,9 +217,16 @@ export function parseListingPaste(text: string): ParsedListing {
     result.cep = `${cepMatch[1]}-${cepMatch[2]}`
   }
 
-  const url = raw.match(/https?:\/\/[^\s)]+/i)
-  if (url) {
-    result.sourceUrl = url[0]
+  const dwvGalleryId = extractDwvGalleryId(raw)
+  if (dwvGalleryId) {
+    result.dwvGalleryId = dwvGalleryId
+    // URL canônica — com ou sem /gallery no original
+    result.sourceUrl = `https://lp.dwvapp.com.br/${dwvGalleryId}`
+  } else {
+    const url = raw.match(/https?:\/\/[^\s)]+/i)
+    if (url) {
+      result.sourceUrl = url[0].replace(/[.,;]+$/, '')
+    }
   }
 
   return result
