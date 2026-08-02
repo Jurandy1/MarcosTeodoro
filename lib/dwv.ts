@@ -2,6 +2,8 @@
 
 export const DWV_GRAPHQL = 'https://dwvapp.com.br/api/graphql'
 export const DWV_S3_BASE = 'https://dwvimages.s3.amazonaws.com'
+/** CDN menor/mais rápido — preferir no download */
+export const DWV_CDN_BASE = 'https://dwvimagesv1.b-cdn.net'
 
 export type DwvFiles = {
   pictures?: string[] | null
@@ -93,9 +95,14 @@ export function extractTrackedLinkId(input: string): string | null {
 
 export function dwvPictureUrl(relativePath: string): string {
   if (!relativePath) return ''
-  if (/^https?:\/\//i.test(relativePath)) return relativePath
+  if (/^https?:\/\//i.test(relativePath)) {
+    // S3 original → CDN (arquivos menores / mais estáveis no Vercel)
+    return relativePath
+      .replace('https://dwvimages.s3.amazonaws.com/', `${DWV_CDN_BASE}/`)
+      .replace('http://dwvimages.s3.amazonaws.com/', `${DWV_CDN_BASE}/`)
+  }
   const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`
-  return `${DWV_S3_BASE}${path}`
+  return `${DWV_CDN_BASE}${path}`
 }
 
 function pushPaths(out: string[], paths: (string | null | undefined)[] | null | undefined) {

@@ -495,9 +495,10 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
           Array.from(new Set([...c, `Fotos DWV (${result.total_fotos ?? images.length})`])),
         )
         const falhas = result.falhas ?? 0
+        const errHint = result.errors?.length ? ` Detalhe: ${result.errors[0]}` : ''
         setToast(
           falhas > 0
-            ? `${result.total_fotos ?? 0} fotos importadas (${falhas} falha(s)). Revise e salve.`
+            ? `${result.total_fotos ?? 0} fotos importadas (${falhas} falha(s)).${errHint}`
             : `${result.total_fotos ?? images.length} fotos importadas da DWV. Revise e salve.`,
         )
       } catch (e) {

@@ -12,6 +12,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'img.youtube.com' },
       { protocol: 'https', hostname: 'ukbirdsuhvsvijtjhjaj.supabase.co' },
+      { protocol: 'https', hostname: 'dwvimagesv1.b-cdn.net' },
+      { protocol: 'https', hostname: 'dwvimages.s3.amazonaws.com' },
     ],
   },
 }

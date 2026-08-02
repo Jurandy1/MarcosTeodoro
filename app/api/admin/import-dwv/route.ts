@@ -37,37 +37,82 @@ async function getSessionUser() {
 }
 
 function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    throw new Error(
+      'Falta SUPABASE_SERVICE_ROLE_KEY (ou URL) no Vercel — configure e faça Redeploy',
+    )
+  }
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+async function fetchImageBuffer(url: string): Promise<Buffer> {
+  const cdnUrl = url
+    .replace('https://dwvimages.s3.amazonaws.com/', 'https://dwvimagesv1.b-cdn.net/')
+    .replace('http://dwvimages.s3.amazonaws.com/', 'https://dwvimagesv1.b-cdn.net/')
+
+  const attempts = [cdnUrl, url].filter((u, i, arr) => arr.indexOf(u) === i)
+  let lastStatus = 0
+  for (const attempt of attempts) {
+    const res = await fetch(attempt, {
+      headers: {
+        Referer: 'https://lp.dwvapp.com.br/',
+        'User-Agent': 'Mozilla/5.0 (compatible; MarcosTeodoroBot/1.0)',
+        Accept: 'image/*,*/*',
+      },
+    })
+    lastStatus = res.status
+    if (res.ok) {
+      const buf = Buffer.from(await res.arrayBuffer())
+      if (buf.byteLength > 0) return buf
+    }
+  }
+  throw new Error(`Falha ao baixar foto (${lastStatus})`)
 }
 
 async function downloadAsWebp(url: string): Promise<{
   buffer: Buffer
   width: number
   height: number
+  mimeType: string
+  ext: string
 }> {
-  const sharp = (await import('sharp')).default
-  const res = await fetch(url, {
-    headers: { Referer: 'https://lp.dwvapp.com.br/' },
-  })
-  if (!res.ok) throw new Error(`Falha ao baixar foto (${res.status})`)
-  const input = Buffer.from(await res.arrayBuffer())
-  const image = sharp(input).rotate().resize({
-    width: 1600,
-    height: 1600,
-    fit: 'inside',
-    withoutEnlargement: true,
-  })
-  const meta = await image.metadata()
-  const buffer = await image.webp({ quality: 82 }).toBuffer()
-  const out = await sharp(buffer).metadata()
-  return {
-    buffer,
-    width: out.width || meta.width || 0,
-    height: out.height || meta.height || 0,
+  const input = await fetchImageBuffer(url)
+
+  try {
+    const sharp = (await import('sharp')).default
+    const { data, info } = await sharp(input, { failOn: 'none' })
+      .rotate()
+      .resize({
+        width: 1400,
+        height: 1400,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 80 })
+      .toBuffer({ resolveWithObject: true })
+
+    return {
+      buffer: data,
+      width: info.width || 0,
+      height: info.height || 0,
+      mimeType: 'image/webp',
+      ext: 'webp',
+    }
+  } catch {
+    // Fallback sem sharp (Vercel / imagem problemática): grava JPEG/PNG original
+    const isJpeg = input[0] === 0xff && input[1] === 0xd8
+    const isPng = input[0] === 0x89 && input[1] === 0x50
+    return {
+      buffer: input,
+      width: 0,
+      height: 0,
+      mimeType: isPng ? 'image/png' : isJpeg ? 'image/jpeg' : 'application/octet-stream',
+      ext: isPng ? 'png' : 'jpg',
+    }
   }
 }
 
@@ -205,18 +250,18 @@ export async function POST(request: Request) {
 
     for (const url of batch) {
       try {
-        const { buffer, width, height } = await downloadAsWebp(url)
-        const fileName = `${crypto.randomUUID()}.webp`
+        const { buffer, width, height, mimeType, ext } = await downloadAsWebp(url)
+        const fileName = `${crypto.randomUUID()}.${ext}`
         const path = propertyImagePath(propertyId, fileName)
 
         const { error: upErr } = await supabase.storage
           .from('property-photos')
           .upload(path, buffer, {
-            contentType: 'image/webp',
+            contentType: mimeType,
             upsert: false,
             cacheControl: '31536000',
           })
-        if (upErr) throw new Error(upErr.message)
+        if (upErr) throw new Error(`Storage: ${upErr.message}`)
 
         const { error: rowErr } = await supabase.from('property_images').insert({
           property_id: propertyId,
@@ -224,17 +269,25 @@ export async function POST(request: Request) {
           width,
           height,
           size_bytes: buffer.byteLength,
-          mime_type: 'image/webp',
+          mime_type: mimeType,
           sort_order: sortOrder++,
         })
-        if (rowErr) throw new Error(rowErr.message)
+        if (rowErr) {
+          throw new Error(
+            `Banco: ${rowErr.message}${
+              /property_images|does not exist|schema cache/i.test(rowErr.message)
+                ? ' — rode supabase/schema-storage-paths.sql no SQL Editor'
+                : ''
+            }`,
+          )
+        }
 
         stored.push({
           path,
           width,
           height,
           sizeBytes: buffer.byteLength,
-          mimeType: 'image/webp',
+          mimeType,
         })
       } catch (e) {
         errors.push(e instanceof Error ? e.message : String(e))
