@@ -150,68 +150,229 @@ function displayTitle(empreendimento: string, unidade: string) {
   return empreendimento || unidade || ''
 }
 
-function mergeParsed(f: FormState, parsed: ParsedListing): FormState {
-  const emp = parsed.empreendimento || parsed.unitName || f.empreendimento
-  const unidade = parsed.unidade || f.unidade
-  const id =
-    f.id ||
-    (emp ? slugifyId(unidade ? `${emp}-${unidade}` : emp) : `imovel-${Date.now()}`)
-  const cityKey = parsed.cityKey || f.cityKey
-  const city = parsed.city || parsed.cityKey || f.city || cityKey
-  return {
-    ...f,
-    id,
-    empreendimento: emp || f.empreendimento,
-    unidade,
-    title: displayTitle(emp || f.empreendimento, unidade),
-    kind: parsed.kind || f.kind,
-    mode: parsed.mode || f.mode,
-    cityKey,
-    city,
-    location: parsed.location || city,
-    // Não sobrescreve endereço cru se formos geocodificar em seguida
-    address: parsed.address || f.address,
-    cep: parsed.cep || f.cep,
-    bedrooms: parsed.bedrooms != null ? String(parsed.bedrooms) : f.bedrooms,
-    bathrooms: parsed.bathrooms != null ? String(parsed.bathrooms) : f.bathrooms,
-    suites: parsed.suites != null ? String(parsed.suites) : f.suites,
-    parking: parsed.parking != null ? String(parsed.parking) : f.parking,
-    areaPrivate: parsed.areaPrivate != null ? String(parsed.areaPrivate) : f.areaPrivate,
-    areaTotal: parsed.areaTotal != null ? String(parsed.areaTotal) : f.areaTotal,
-    price: parsed.price || f.price,
-    priceValue: parsed.priceValue != null ? String(parsed.priceValue) : f.priceValue,
-    entrada: parsed.entrada || f.entrada,
-    reforco: parsed.reforco || f.reforco,
-    parcelamento: parsed.parcelamento || f.parcelamento,
-    unitFeaturesText: parsed.unitFeatures?.length
-      ? parsed.unitFeatures.join('\n')
-      : f.unitFeaturesText,
-    amenitiesText: parsed.amenities?.length ? parsed.amenities.join('\n') : f.amenitiesText,
-    sourceUrl: parsed.sourceUrl || f.sourceUrl,
-  }
+function norm(s: string) {
+  return s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase()
 }
 
-function detectedChips(parsed: ParsedListing): string[] {
-  const chips: string[] = []
-  if (parsed.empreendimento || parsed.unitName) chips.push('Empreendimento')
-  if (parsed.unidade) chips.push('Unidade')
-  if (parsed.areaPrivate) chips.push('Área')
-  if (parsed.bedrooms != null) chips.push('Dormitórios')
-  if (parsed.price) chips.push('Valor')
-  if (parsed.entrada) chips.push('Entrada')
-  if (parsed.reforco) chips.push('Reforço')
-  if (parsed.parcelamento) chips.push('Parcelas')
-  if (parsed.unitFeatures?.length) chips.push(`${parsed.unitFeatures.length} itens unidade`)
-  if (parsed.amenities?.length) chips.push(`${parsed.amenities.length} itens prédio`)
-  if (parsed.address) chips.push('Endereço')
-  if (parsed.cep) chips.push('CEP')
-  if (parsed.cityKey) chips.push(parsed.cityKey)
-  if (parsed.dwvGalleryId || parsed.sourceUrl?.includes('dwvapp.com.br')) {
-    chips.push('Link DWV')
-  } else if (parsed.sourceUrl) {
-    chips.push('Link')
+function listsEqual(a: string, b: string) {
+  const la = a
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+  const lb = b
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+  if (la.length !== lb.length) return false
+  return la.every((line, i) => norm(line) === norm(lb[i]))
+}
+
+export type PasteChange = { label: string; from: string; to: string }
+
+/**
+ * Aplica o anúncio colado e lista o que mudou em relação ao formulário atual.
+ * Só sobrescreve campos presentes no texto parseado.
+ */
+function applyParsedWithDiff(
+  f: FormState,
+  parsed: ParsedListing,
+): { next: FormState; changes: PasteChange[]; filled: string[] } {
+  const changes: PasteChange[] = []
+  const filled: string[] = []
+  const next: FormState = { ...f }
+
+  const setIfParsed = (
+    label: string,
+    hasValue: boolean,
+    current: string,
+    incoming: string,
+    apply: (v: string) => void,
+  ) => {
+    if (!hasValue) return
+    const to = incoming.trim()
+    if (!to && !current) return
+    if (norm(current) === norm(to)) {
+      filled.push(label)
+      return
+    }
+    changes.push({
+      label,
+      from: current.trim() || '—',
+      to: to || '—',
+    })
+    apply(to)
+    filled.push(label)
   }
-  return chips
+
+  const emp = parsed.empreendimento || parsed.unitName
+  if (emp) {
+    setIfParsed('Empreendimento', true, f.empreendimento, emp, (v) => {
+      next.empreendimento = v
+    })
+  }
+  if (parsed.unidade != null && parsed.unidade !== '') {
+    setIfParsed('Unidade', true, f.unidade, parsed.unidade, (v) => {
+      next.unidade = v
+    })
+  }
+
+  next.title = displayTitle(next.empreendimento, next.unidade)
+
+  if (parsed.kind) {
+    if (f.kind !== parsed.kind) {
+      changes.push({ label: 'Tipo', from: f.kind, to: parsed.kind })
+    }
+    next.kind = parsed.kind
+    filled.push('Tipo')
+  }
+  if (parsed.mode) {
+    if (f.mode !== parsed.mode) {
+      changes.push({ label: 'Finalidade', from: f.mode, to: parsed.mode })
+    }
+    next.mode = parsed.mode
+    filled.push('Finalidade')
+  }
+
+  setIfParsed('Cidade', Boolean(parsed.cityKey || parsed.city), f.cityKey, parsed.cityKey || parsed.city || '', (v) => {
+    next.cityKey = v
+    next.city = v
+    next.location = parsed.location || v
+  })
+
+  setIfParsed('Endereço', Boolean(parsed.address), f.address, parsed.address || '', (v) => {
+    next.address = v
+  })
+  setIfParsed('CEP', Boolean(parsed.cep), f.cep, parsed.cep || '', (v) => {
+    next.cep = v
+  })
+
+  setIfParsed(
+    'Dormitórios',
+    parsed.bedrooms != null,
+    f.bedrooms,
+    parsed.bedrooms != null ? String(parsed.bedrooms) : '',
+    (v) => {
+      next.bedrooms = v
+    },
+  )
+  setIfParsed(
+    'Banheiros',
+    parsed.bathrooms != null,
+    f.bathrooms,
+    parsed.bathrooms != null ? String(parsed.bathrooms) : '',
+    (v) => {
+      next.bathrooms = v
+    },
+  )
+  setIfParsed(
+    'Suítes',
+    parsed.suites != null,
+    f.suites,
+    parsed.suites != null ? String(parsed.suites) : '',
+    (v) => {
+      next.suites = v
+    },
+  )
+  setIfParsed(
+    'Vagas',
+    parsed.parking != null,
+    f.parking,
+    parsed.parking != null ? String(parsed.parking) : '',
+    (v) => {
+      next.parking = v
+    },
+  )
+  setIfParsed(
+    'Área privativa',
+    parsed.areaPrivate != null,
+    f.areaPrivate,
+    parsed.areaPrivate != null ? String(parsed.areaPrivate) : '',
+    (v) => {
+      next.areaPrivate = v
+    },
+  )
+  setIfParsed(
+    'Área total',
+    parsed.areaTotal != null,
+    f.areaTotal,
+    parsed.areaTotal != null ? String(parsed.areaTotal) : '',
+    (v) => {
+      next.areaTotal = v
+    },
+  )
+
+  setIfParsed('Valor', Boolean(parsed.price), f.price, parsed.price || '', (v) => {
+    next.price = v
+  })
+  setIfParsed(
+    'Valor numérico',
+    parsed.priceValue != null,
+    f.priceValue,
+    parsed.priceValue != null ? String(parsed.priceValue) : '',
+    (v) => {
+      next.priceValue = v
+    },
+  )
+  setIfParsed('Entrada', Boolean(parsed.entrada), f.entrada, parsed.entrada || '', (v) => {
+    next.entrada = v
+  })
+  setIfParsed('Reforço', Boolean(parsed.reforco), f.reforco, parsed.reforco || '', (v) => {
+    next.reforco = v
+  })
+  setIfParsed(
+    'Parcelamento',
+    Boolean(parsed.parcelamento),
+    f.parcelamento,
+    parsed.parcelamento || '',
+    (v) => {
+      next.parcelamento = v
+    },
+  )
+
+  if (parsed.unitFeatures?.length) {
+    const to = parsed.unitFeatures.join('\n')
+    if (!listsEqual(f.unitFeaturesText, to)) {
+      changes.push({
+        label: 'Itens da unidade',
+        from: f.unitFeaturesText.trim() ? `${f.unitFeaturesText.trim().split(/\n/).length} itens` : '—',
+        to: `${parsed.unitFeatures.length} itens`,
+      })
+      next.unitFeaturesText = to
+    }
+    filled.push('Itens unidade')
+  }
+  if (parsed.amenities?.length) {
+    const to = parsed.amenities.join('\n')
+    if (!listsEqual(f.amenitiesText, to)) {
+      changes.push({
+        label: 'Itens do empreendimento',
+        from: f.amenitiesText.trim() ? `${f.amenitiesText.trim().split(/\n/).length} itens` : '—',
+        to: `${parsed.amenities.length} itens`,
+      })
+      next.amenitiesText = to
+    }
+    filled.push('Itens prédio')
+  }
+
+  setIfParsed('Link DWV', Boolean(parsed.sourceUrl), f.sourceUrl, parsed.sourceUrl || '', (v) => {
+    next.sourceUrl = v
+  })
+
+  // Mantém o id do imóvel em edição
+  if (!next.id) {
+    const empName = next.empreendimento
+    const und = next.unidade
+    next.id = empName
+      ? slugifyId(und ? `${empName}-${und}` : empName)
+      : `imovel-${Date.now()}`
+  }
+
+  return { next, changes, filled }
+}
+
+function changeChips(changes: PasteChange[]): string[] {
+  if (changes.length === 0) return ['Nada novo']
+  return changes.map((c) => `↻ ${c.label}`)
 }
 
 function Step({
@@ -258,6 +419,7 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [paste, setPaste] = useState('')
   const [chips, setChips] = useState<string[]>([])
+  const [pasteChanges, setPasteChanges] = useState<PasteChange[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [busyPhotos, setBusyPhotos] = useState(false)
   const [photoProgress, setPhotoProgress] = useState<string | null>(null)
@@ -454,10 +616,11 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
     ) {
       setToast('Não reconheci o formato. Cole o anúncio completo (com ou sem link DWV).')
       setChips([])
+      setPasteChanges([])
       return false
     }
 
-    // Link DWV já cadastrado? Não cria outro — abre o existente e descarta rascunho
+    // Link DWV já cadastrado em OUTRO imóvel? (na edição do mesmo, libera)
     if (parsed.dwvGalleryId || parsed.sourceUrl?.includes('dwvapp.com.br')) {
       const link = parsed.sourceUrl || parsed.dwvGalleryId || ''
       try {
@@ -475,34 +638,49 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       }
     }
 
-    const merged = mergeParsed(form, parsed)
+    const { next: merged, changes, filled } = applyParsedWithDiff(form, parsed)
     setForm(merged)
-    setChips(detectedChips(parsed))
+    setPasteChanges(changes)
+    setChips(changes.length > 0 ? changeChips(changes) : filled.map((l) => `✓ ${l}`))
+
     if (parsed.empreendimento || parsed.unitName) {
-      const emp = parsed.empreendimento || parsed.unitName || ''
-      setEmpOptions((prev) =>
-        Array.from(new Set([...prev, emp])).sort((a, b) => a.localeCompare(b, 'pt-BR')),
-      )
-      if (parsed.unidade) {
+      const emp = merged.empreendimento
+      if (emp) {
+        setEmpOptions((prev) =>
+          Array.from(new Set([...prev, emp])).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+        )
+      }
+      if (merged.unidade) {
         setUnitOptions((prev) =>
-          Array.from(new Set([...prev, parsed.unidade!])).sort((a, b) =>
+          Array.from(new Set([...prev, merged.unidade])).sort((a, b) =>
             a.localeCompare(b, 'pt-BR'),
           ),
         )
       }
     }
 
-    if (parsed.cep && isCompleteCep(parsed.cep)) {
+    const addressChanged = changes.some((c) => c.label === 'Endereço' || c.label === 'CEP')
+    if (parsed.cep && isCompleteCep(parsed.cep) && (addressChanged || !form.cep)) {
       void applyCep(parsed.cep, { silent: true })
-    } else if (parsed.address) {
+    } else if (parsed.address && (addressChanged || !form.address)) {
       void applyGeocode(parsed.address, { silent: true })
     }
 
-    if (parsed.dwvGalleryId && parsed.sourceUrl) {
+    // Se as fotos já estão no Storage, não baixa de novo (edição ou re-cole).
+    // Para forçar: use “Reimportar fotos deste link”.
+    const alreadyHasPhotos = form.images.length > 0
+    const shouldImportPhotos =
+      Boolean(parsed.dwvGalleryId && parsed.sourceUrl) && !alreadyHasPhotos
+
+    if (shouldImportPhotos && parsed.sourceUrl) {
       const propertyIdLocal = merged.id.trim() || uploadFolder
       setBusyPhotos(true)
       setPhotoProgress('Importando fotos da DWV…')
-      setToast('Anúncio aplicado. Baixando fotos da DWV para o Storage…')
+      setToast(
+        changes.length > 0
+          ? `${changes.length} campo(s) atualizado(s). Baixando fotos da DWV…`
+          : 'Anúncio aplicado. Baixando fotos da DWV…',
+      )
       try {
         const result = await importDwvGallery({
           galleryUrl: parsed.sourceUrl,
@@ -526,8 +704,7 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
           title: f.title || result.title?.trim() || f.title,
           images: images.length > 0 ? images : f.images,
         }))
-        const empName =
-          result.empreendimento?.trim() || result.title?.trim()
+        const empName = result.empreendimento?.trim() || result.title?.trim()
         if (empName) {
           setEmpOptions((prev) =>
             Array.from(new Set([...prev, empName])).sort((a, b) =>
@@ -540,10 +717,12 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
         )
         const falhas = result.falhas ?? 0
         const errHint = result.errors?.length ? ` Detalhe: ${result.errors[0]}` : ''
+        const changeMsg =
+          changes.length > 0 ? `${changes.length} alteração(ões). ` : ''
         setToast(
           falhas > 0
-            ? `${result.total_fotos ?? 0} fotos importadas (${falhas} falha(s)).${errHint}`
-            : `${result.total_fotos ?? images.length} fotos importadas da DWV. Revise e salve.`,
+            ? `${changeMsg}${result.total_fotos ?? 0} fotos importadas (${falhas} falha(s)).${errHint}`
+            : `${changeMsg}${result.total_fotos ?? images.length} fotos importadas da DWV. Revise e salve.`,
         )
       } catch (e) {
         if (e instanceof DwvDuplicateError) {
@@ -556,15 +735,40 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
         }
         setToast(
           e instanceof Error
-            ? `Dados preenchidos, mas falha ao importar fotos: ${e.message}`
-            : 'Dados preenchidos, mas falha ao importar fotos da DWV.',
+            ? `Dados aplicados, mas falha ao importar fotos: ${e.message}`
+            : 'Dados aplicados, mas falha ao importar fotos da DWV.',
         )
       } finally {
         setBusyPhotos(false)
         setPhotoProgress(null)
       }
+    } else if (isEdit) {
+      const photosNote = alreadyHasPhotos
+        ? ' Fotos já baixadas — mantidas (sem reimportar).'
+        : ''
+      if (changes.length === 0) {
+        setToast(
+          alreadyHasPhotos
+            ? `Anúncio igual ao cadastro — nenhuma alteração.${photosNote}`
+            : 'Anúncio igual ao cadastro — nenhuma alteração detectada.',
+        )
+      } else {
+        setToast(
+          `${changes.length} campo(s) atualizado(s): ${changes.map((c) => c.label).join(', ')}.${photosNote} Revise e salve.`,
+        )
+      }
+    } else if (alreadyHasPhotos) {
+      setToast(
+        changes.length > 0
+          ? `${changes.length} campo(s) definidos. Fotos já existentes mantidas.`
+          : 'Dados aplicados. Fotos já existentes mantidas.',
+      )
     } else {
-      setToast('Preenchido automaticamente. Revise e adicione as fotos.')
+      setToast(
+        changes.length > 0
+          ? `Preenchido · ${changes.length} campo(s) definidos. Revise e adicione as fotos.`
+          : 'Preenchido automaticamente. Revise e adicione as fotos.',
+      )
     }
 
     return true
@@ -622,6 +826,18 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       ;[images[index], images[j]] = [images[j], images[index]]
       return { ...f, images }
     })
+  }
+
+  const setAsCover = (index: number) => {
+    if (index <= 0) return
+    setForm((f) => {
+      if (index >= f.images.length) return f
+      const images = [...f.images]
+      const [picked] = images.splice(index, 1)
+      images.unshift(picked)
+      return { ...f, images }
+    })
+    setToast('Capa atualizada. Salve para publicar a alteração.')
   }
 
   const checklist = useMemo(() => {
@@ -779,13 +995,16 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                   1. Cole o anúncio
                 </h2>
                 <p className="mt-1 text-[0.82rem] text-[#6f7680]">
-                  Ctrl+V aqui — preenche os campos e, se houver link DWV, importa as fotos
-                  automaticamente para o Storage.
+                  {isEdit
+                    ? 'Cole de novo para corrigir — só o que mudou é atualizado. Fotos já baixadas não são reimportadas.'
+                    : 'Ctrl+V aqui — preenche os campos e, se houver link DWV e ainda não houver fotos, importa automaticamente.'}
                 </p>
               </div>
               {chips.length > 0 && (
                 <span className="shrink-0 text-[0.65rem] font-semibold tracking-[.08em] uppercase text-[#1f6b4a] bg-[#e7f5ef] px-2 py-1">
-                  {chips.length} campos
+                  {pasteChanges.length > 0
+                    ? `${pasteChanges.length} alterado(s)`
+                    : `${chips.length} campos`}
                 </span>
               )}
             </div>
@@ -795,7 +1014,11 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
               onChange={(e) => setPaste(e.target.value)}
               onPaste={onPasteArea}
               rows={6}
-              placeholder="Cole aqui o texto do WhatsApp / DWV…"
+              placeholder={
+                isEdit
+                  ? 'Cole o anúncio atualizado para detectar e corrigir diferenças…'
+                  : 'Cole aqui o texto do WhatsApp / DWV…'
+              }
               className={`${field} font-mono text-[0.78rem] leading-relaxed min-h-[140px] bg-[#faf9f7]`}
             />
             <div className="mt-3 flex flex-wrap gap-2">
@@ -805,25 +1028,55 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                 disabled={busyPhotos}
                 className="min-h-[40px] px-4 bg-[#0e6b7a] text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:bg-[#095260] disabled:opacity-50"
               >
-                {busyPhotos ? photoProgress || 'Importando…' : 'Preencher agora'}
+                {busyPhotos
+                  ? photoProgress || 'Importando…'
+                  : isEdit
+                    ? 'Atualizar pelo anúncio'
+                    : 'Preencher agora'}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setPaste('')
                   setChips([])
+                  setPasteChanges([])
                 }}
                 className="min-h-[40px] px-3 text-[0.68rem] font-semibold tracking-[.1em] uppercase text-[#6f7680] hover:text-[#0b1420]"
               >
                 Limpar
               </button>
             </div>
+            {pasteChanges.length > 0 && (
+              <div className="mt-3 border border-[#e8d9a8] bg-[#fffbf0] px-3 py-2.5 space-y-1.5">
+                <p className="text-[0.62rem] font-semibold tracking-[.1em] uppercase text-[#8a7040]">
+                  Alterações detectadas
+                </p>
+                <ul className="space-y-1">
+                  {pasteChanges.map((c) => (
+                    <li key={c.label} className="text-[0.78rem] text-[#4a5560]">
+                      <span className="font-medium text-[#0b1420]">{c.label}:</span>{' '}
+                      <span className="text-[#9b3b3b] line-through decoration-[#9b3b3b]/40">
+                        {c.from.length > 60 ? `${c.from.slice(0, 60)}…` : c.from}
+                      </span>
+                      <span className="mx-1.5 text-[#c9a35a]">→</span>
+                      <span className="text-[#1f6b4a]">
+                        {c.to.length > 60 ? `${c.to.slice(0, 60)}…` : c.to}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {chips.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {chips.map((c) => (
                   <span
                     key={c}
-                    className="text-[0.65rem] bg-[#e8f4f6] text-[#0e6b7a] px-2 py-1 font-medium"
+                    className={`text-[0.65rem] px-2 py-1 font-medium ${
+                      c.startsWith('↻')
+                        ? 'bg-[#fff4e0] text-[#8a7040]'
+                        : 'bg-[#e8f4f6] text-[#0e6b7a]'
+                    }`}
                   >
                     {c}
                   </span>
@@ -1040,7 +1293,9 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                       }}
                       className="mt-2 min-h-[36px] px-3 text-[0.65rem] font-semibold tracking-[.1em] uppercase bg-[#e8f4f6] text-[#0e6b7a] hover:bg-[#d5eef2] disabled:opacity-50"
                     >
-                      Reimportar fotos deste link
+                      {form.images.length > 0
+                        ? 'Reimportar fotos (substitui as atuais)'
+                        : 'Importar fotos deste link'}
                     </button>
                   )}
                 </div>
@@ -1055,8 +1310,8 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                   3. Fotos (path relativo)
                 </h2>
                 <p className="mt-1 text-[0.82rem] text-[#6f7680]">
-                  Salvas como <code>imoveis/&#123;id&#125;/&#123;uuid&#125;.webp</code> — o banco
-                  guarda só o path + metadata (pronto para migrar ao R2).
+                  Clique em “Usar como capa” em qualquer foto. A primeira da lista é a capa do
+                  anúncio.
                 </p>
               </div>
               <label className="inline-flex min-h-[42px] cursor-pointer items-center px-4 bg-[#0b1420] text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:bg-[#162033]">
@@ -1113,13 +1368,21 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                       height={asset.height || undefined}
                       className="aspect-[4/3] w-full object-cover"
                     />
-                    {i === 0 && (
-                      <span className="absolute top-1.5 left-1.5 text-[0.55rem] font-semibold tracking-[.1em] uppercase bg-white px-1.5 py-0.5">
+                    {i === 0 ? (
+                      <span className="absolute top-1.5 left-1.5 text-[0.55rem] font-semibold tracking-[.1em] uppercase bg-[#0e6b7a] text-white px-1.5 py-0.5">
                         Capa
                       </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setAsCover(i)}
+                        className="absolute top-1.5 left-1.5 text-[0.55rem] font-semibold tracking-[.08em] uppercase bg-white/95 text-[#0b1420] px-1.5 py-0.5 hover:bg-[#0e6b7a] hover:text-white transition-colors"
+                      >
+                        Usar como capa
+                      </button>
                     )}
-                    <div className="absolute inset-x-0 top-1.5 right-1.5 flex justify-end">
-                      <span className="text-[0.5rem] bg-[#0b1420]/75 text-white px-1 py-0.5 max-w-[90%] truncate">
+                    <div className="absolute inset-x-0 top-1.5 right-1.5 flex justify-end pointer-events-none">
+                      <span className="text-[0.5rem] bg-[#0b1420]/75 text-white px-1 py-0.5 max-w-[55%] truncate">
                         {asset.width}×{asset.height} · {Math.round(asset.sizeBytes / 1024)}kb
                       </span>
                     </div>
