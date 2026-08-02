@@ -17,6 +17,20 @@ export type ImportDwvResult = {
   done?: boolean
   nextOffset?: number
   batch_fotos?: number
+  duplicate?: boolean
+  existingId?: string
+  existingTitle?: string
+}
+
+export class DwvDuplicateError extends Error {
+  existingId: string
+  existingTitle?: string
+  constructor(message: string, existingId: string, existingTitle?: string) {
+    super(message)
+    this.name = 'DwvDuplicateError'
+    this.existingId = existingId
+    this.existingTitle = existingTitle
+  }
 }
 
 async function postImport(body: Record<string, unknown>): Promise<ImportDwvResult> {
@@ -36,6 +50,14 @@ async function postImport(body: Record<string, unknown>): Promise<ImportDwvResul
       res.status === 504 || /timeout|FUNCTION_INVOCATION/i.test(text)
         ? 'Timeout no servidor ao importar fotos. Tente de novo (importação em lotes).'
         : `Resposta inválida do servidor (${res.status}): ${hint || 'vazia'}`,
+    )
+  }
+
+  if (json.duplicate && json.existingId) {
+    throw new DwvDuplicateError(
+      json.error || 'Imóvel já cadastrado com este link DWV.',
+      json.existingId,
+      json.existingTitle,
     )
   }
 

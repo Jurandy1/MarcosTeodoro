@@ -23,9 +23,11 @@ import {
   fetchAdminProperty,
   fetchEmpreendimentosDb,
   fetchUnidadesDb,
+  findPropertyByDwvLink,
+  deleteAdminPropertyDb,
   saveAdminPropertyDb,
 } from '@/lib/supabase/properties-api'
-import { importDwvGallery } from '@/lib/supabase/import-dwv'
+import { DwvDuplicateError, importDwvGallery } from '@/lib/supabase/import-dwv'
 import { removePropertyPhoto, uploadPropertyPhotos } from '@/lib/supabase/storage'
 
 type FormState = {
@@ -418,6 +420,28 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
     }
   }
 
+  const discardDraftAndOpenExisting = async (
+    existingId: string,
+    message: string,
+    draftId?: string,
+  ) => {
+    const toDelete = draftId || form.id
+    if (
+      toDelete &&
+      toDelete !== existingId &&
+      (/^(draft-|dwv-|imovel-)/i.test(toDelete) || !isEdit)
+    ) {
+      try {
+        await deleteAdminPropertyDb(toDelete)
+      } catch {
+        /* rascunho pode não existir ainda */
+      }
+    }
+    setToast(message)
+    router.replace(`/admin/imoveis/${existingId}`)
+    router.refresh()
+  }
+
   const applyText = async (text: string) => {
     const parsed = parseListingPaste(text)
     if (
@@ -431,6 +455,24 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       setToast('Não reconheci o formato. Cole o anúncio completo (com ou sem link DWV).')
       setChips([])
       return false
+    }
+
+    // Link DWV já cadastrado? Não cria outro — abre o existente e descarta rascunho
+    if (parsed.dwvGalleryId || parsed.sourceUrl?.includes('dwvapp.com.br')) {
+      const link = parsed.sourceUrl || parsed.dwvGalleryId || ''
+      try {
+        const existing = await findPropertyByDwvLink(link, propertyId || form.id || undefined)
+        if (existing) {
+          await discardDraftAndOpenExisting(
+            existing.id,
+            `Este imóvel já está cadastrado (“${existing.title || existing.id}”). Rascunho descartado — abrindo o existente.`,
+            form.id || uploadFolder,
+          )
+          return false
+        }
+      } catch {
+        /* segue o fluxo normal se a busca falhar */
+      }
     }
 
     const merged = mergeParsed(form, parsed)
@@ -457,14 +499,14 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
     }
 
     if (parsed.dwvGalleryId && parsed.sourceUrl) {
-      const propertyId = merged.id.trim() || uploadFolder
+      const propertyIdLocal = merged.id.trim() || uploadFolder
       setBusyPhotos(true)
       setPhotoProgress('Importando fotos da DWV…')
       setToast('Anúncio aplicado. Baixando fotos da DWV para o Storage…')
       try {
         const result = await importDwvGallery({
           galleryUrl: parsed.sourceUrl,
-          propertyId,
+          propertyId: propertyIdLocal,
           replacePhotos: true,
           onProgress: (done, total) => {
             setPhotoProgress(`Importando fotos DWV ${done}/${total}…`)
@@ -473,7 +515,7 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
         const images = result.images ?? []
         setForm((f) => ({
           ...f,
-          id: result.propertyId || f.id || propertyId,
+          id: result.propertyId || f.id || propertyIdLocal,
           sourceUrl: parsed.sourceUrl || f.sourceUrl,
           empreendimento:
             f.empreendimento ||
@@ -504,6 +546,14 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
             : `${result.total_fotos ?? images.length} fotos importadas da DWV. Revise e salve.`,
         )
       } catch (e) {
+        if (e instanceof DwvDuplicateError) {
+          await discardDraftAndOpenExisting(
+            e.existingId,
+            e.message,
+            merged.id || uploadFolder,
+          )
+          return false
+        }
         setToast(
           e instanceof Error
             ? `Dados preenchidos, mas falha ao importar fotos: ${e.message}`
@@ -657,6 +707,16 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       router.push('/admin/imoveis')
       router.refresh()
     } catch (e) {
+      const msg = e instanceof Error ? e.message : ''
+      if (msg.startsWith('DUPLICATE_DWV:')) {
+        const [, existingId, existingTitle] = msg.split(':')
+        await discardDraftAndOpenExisting(
+          existingId,
+          `Este imóvel já está cadastrado (“${existingTitle || existingId}”). Rascunho descartado.`,
+          id,
+        )
+        return
+      }
       setToast(
         e instanceof Error
           ? e.message
@@ -961,6 +1021,14 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                               `${result.total_fotos ?? images.length} fotos importadas da DWV.`,
                             )
                           } catch (e) {
+                            if (e instanceof DwvDuplicateError) {
+                              await discardDraftAndOpenExisting(
+                                e.existingId,
+                                e.message,
+                                form.id || uploadFolder,
+                              )
+                              return
+                            }
                             setToast(
                               e instanceof Error ? e.message : 'Falha ao importar fotos DWV.',
                             )

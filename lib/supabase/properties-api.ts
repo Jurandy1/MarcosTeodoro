@@ -1,4 +1,6 @@
 import type { AdminProperty } from '@/lib/admin-store'
+import { extractDwvGalleryId } from '@/lib/listing-paste-parser'
+import { extractTrackedLinkId } from '@/lib/dwv'
 import { createClient } from '@/lib/supabase/client'
 import {
   fromRow,
@@ -6,6 +8,41 @@ import {
   type PropertyImageRow,
   type PropertyRow,
 } from '@/lib/supabase/properties-map'
+
+export function canonicalDwvSourceUrl(input: string): string | null {
+  const id = extractDwvGalleryId(input) || extractTrackedLinkId(input)
+  if (!id) return null
+  return `https://lp.dwvapp.com.br/${id}`
+}
+
+export function dwvGalleryIdFromUrl(input: string): string | null {
+  return extractDwvGalleryId(input) || extractTrackedLinkId(input)
+}
+
+/** Busca imóvel já cadastrado com o mesmo link DWV (qualquer status). */
+export async function findPropertyByDwvLink(
+  galleryUrlOrId: string,
+  excludeId?: string,
+): Promise<AdminProperty | null> {
+  const galleryId = dwvGalleryIdFromUrl(galleryUrlOrId)
+  if (!galleryId) return null
+
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .ilike('source_url', `%${galleryId}%`)
+    .order('updated_at', { ascending: false })
+    .limit(10)
+
+  if (error || !data?.length) return null
+
+  const row = (data as PropertyRow[]).find((r) => r.id !== excludeId)
+  if (!row) return null
+
+  const imagesMap = await fetchImagesFor([row.id])
+  return fromRow(row, imagesMap[row.id] ?? [])
+}
 
 async function fetchImagesFor(ids: string[]): Promise<Record<string, PropertyImageRow[]>> {
   if (ids.length === 0) return {}
@@ -58,14 +95,33 @@ export async function deleteAdminPropertyDb(id: string): Promise<void> {
 
 export async function saveAdminPropertyDb(property: AdminProperty): Promise<void> {
   const supabase = createClient()
+
+  // Bloqueia duplicata por link DWV
+  if (property.sourceUrl) {
+    const dup = await findPropertyByDwvLink(property.sourceUrl, property.id)
+    if (dup) {
+      const err = new Error(
+        `DUPLICATE_DWV:${dup.id}:${dup.title || dup.id}`,
+      ) as Error & { existingId?: string }
+      err.existingId = dup.id
+      throw err
+    }
+  }
+
   const assets = property.imageAssets ?? []
+  const canonical =
+    (property.sourceUrl && canonicalDwvSourceUrl(property.sourceUrl)) ||
+    property.sourceUrl ||
+    null
+
   const payload = {
     ...toRow({
       ...property,
+      sourceUrl: canonical || property.sourceUrl,
       coverPath: property.coverPath || assets[0]?.path,
       imageAssets: assets,
     }),
-    // Limpa legado: não persistir URL completa
+    // Limpa legado: não persistir URL completa de foto
     cover_url: null,
     images: [],
   }

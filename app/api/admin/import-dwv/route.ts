@@ -176,13 +176,50 @@ export async function POST(request: Request) {
 
     const supabase = serviceClient()
     const now = new Date().toISOString()
-    const propertyId =
+    const requestedId =
       body.propertyId?.trim() ||
       `dwv-${property?.id?.slice(0, 8) || trackedLinkId.slice(0, 8)}`
+    const canonicalSource = `https://lp.dwvapp.com.br/${trackedLinkId}`
 
     const offset = Math.max(0, Number(body.offset) || 0)
     const limit = Math.min(8, Math.max(1, Number(body.limit) || BATCH_DEFAULT))
     const isFirstBatch = offset === 0
+
+    // Já existe imóvel com este link DWV?
+    const { data: byLink } = await supabase
+      .from('properties')
+      .select('id, title, status')
+      .ilike('source_url', `%${trackedLinkId}%`)
+      .order('updated_at', { ascending: false })
+      .limit(10)
+
+    const existingByLink = (byLink ?? []).find((p) => p.id !== requestedId)
+    if (existingByLink && isFirstBatch) {
+      // Remove rascunho órfão que tentou ser criado agora
+      if (requestedId && requestedId !== existingByLink.id) {
+        await supabase
+          .from('properties')
+          .delete()
+          .eq('id', requestedId)
+          .eq('status', 'rascunho')
+      }
+      return NextResponse.json(
+        {
+          ok: false,
+          duplicate: true,
+          existingId: existingByLink.id,
+          existingTitle: existingByLink.title,
+          error: `Este imóvel já está cadastrado pelo link DWV (“${existingByLink.title || existingByLink.id}”). Rascunho descartado.`,
+        },
+        { status: 409 },
+      )
+    }
+
+    // Se o link já aponta para o próprio requestedId, reutiliza
+    const propertyId =
+      (byLink ?? []).find((p) => p.id === requestedId)?.id ||
+      existingByLink?.id ||
+      requestedId
 
     if (isFirstBatch) {
       const { data: existing } = await supabase
@@ -211,7 +248,7 @@ export async function POST(request: Request) {
           parking: 0,
           area: 0,
           price: 'Sob consulta',
-          source_url: galleryUrl,
+          source_url: canonicalSource,
           cover_url: null,
           images: [],
           videos: [],
@@ -226,7 +263,7 @@ export async function POST(request: Request) {
       } else {
         await supabase
           .from('properties')
-          .update({ source_url: galleryUrl, updated_at: now })
+          .update({ source_url: canonicalSource, updated_at: now })
           .eq('id', propertyId)
       }
 
