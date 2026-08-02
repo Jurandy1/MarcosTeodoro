@@ -78,6 +78,8 @@ function parseAreaNumber(raw: string): number {
   }
   return Number(s)
 }
+
+function extractBullets(block: string): string[] {
   return block
     .split(/\r?\n/)
     .map((l) => l.replace(/^[\s*•\-–—]+/, '').trim())
