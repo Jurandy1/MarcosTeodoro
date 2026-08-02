@@ -9,6 +9,8 @@ export type ImportDwvResult = {
   coverPath?: string | null
   images?: StoredImage[]
   title?: string
+  empreendimento?: string | null
+  unidade?: string | null
   error?: string
   dryRun?: boolean
   totalFotos?: number
@@ -67,6 +69,8 @@ export async function importDwvGallery(opts: {
   let offset = 0
   let propertyId = opts.propertyId
   let title: string | undefined
+  let empreendimento: string | null | undefined
+  let unidade: string | null | undefined
   let totalFotos = 0
   let coverPath: string | null = null
   let replacePhotos = opts.replacePhotos ?? true
@@ -83,6 +87,8 @@ export async function importDwvGallery(opts: {
     replacePhotos = false
     propertyId = batch.propertyId || propertyId
     title = batch.title || title
+    empreendimento = batch.empreendimento ?? empreendimento
+    unidade = batch.unidade ?? unidade
     totalFotos = batch.totalFotos || totalFotos
     if (batch.coverPath && !coverPath) coverPath = batch.coverPath
     if (batch.images?.length) allImages.push(...batch.images)
@@ -94,7 +100,6 @@ export async function importDwvGallery(opts: {
 
     if (batch.done || offset >= (totalFotos || Infinity)) break
     if ((batch.batch_fotos ?? 0) === 0 && (batch.falhas ?? 0) > 0 && offset === 0) {
-      // lote 0 falhou inteiro — não loop infinito
       break
     }
   }
@@ -103,6 +108,8 @@ export async function importDwvGallery(opts: {
     ok: true,
     propertyId,
     title,
+    empreendimento,
+    unidade,
     totalFotos,
     total_fotos: allImages.length,
     falhas,

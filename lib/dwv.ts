@@ -1,7 +1,27 @@
-/** Cliente DWV GraphQL (hotsite / tracked link) — sem token para getTrackedLink */
+/** Cliente DWV GraphQL (hotsite / tracked link) */
 
 export const DWV_GRAPHQL = 'https://dwvapp.com.br/api/graphql'
 export const DWV_S3_BASE = 'https://dwvimages.s3.amazonaws.com'
+
+export type DwvFiles = {
+  pictures?: string[] | null
+  progressPictures?: string[] | null
+  blueprints?: string[] | null
+}
+
+export type DwvGallery = {
+  id?: string
+  title?: string | null
+  files?: string[] | null
+}
+
+export type DwvDevelopment = {
+  id: string
+  name: string | null
+  coverPath?: string | null
+  files?: DwvFiles | null
+  galleries?: DwvGallery[] | null
+}
 
 export type DwvTrackedLink = {
   id: string
@@ -11,7 +31,10 @@ export type DwvTrackedLink = {
     name: string | null
     propertyType: string | null
     status: string | null
-    files: { pictures: string[] } | null
+    coverPath?: string | null
+    files: DwvFiles | null
+    galleries?: DwvGallery[] | null
+    reDevelopment?: DwvDevelopment | null
   } | null
   user: {
     id: string
@@ -33,7 +56,16 @@ const GET_TRACKED_LINK = `
         name
         propertyType
         status
-        files { pictures }
+        coverPath
+        files { pictures progressPictures blueprints }
+        galleries { id title files }
+        reDevelopment {
+          id
+          name
+          coverPath
+          files { pictures progressPictures blueprints }
+          galleries { id title files }
+        }
       }
       user {
         id
@@ -60,8 +92,65 @@ export function extractTrackedLinkId(input: string): string | null {
 }
 
 export function dwvPictureUrl(relativePath: string): string {
+  if (!relativePath) return ''
   if (/^https?:\/\//i.test(relativePath)) return relativePath
-  return `${DWV_S3_BASE}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`
+  const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`
+  return `${DWV_S3_BASE}${path}`
+}
+
+function pushPaths(out: string[], paths: (string | null | undefined)[] | null | undefined) {
+  if (!paths?.length) return
+  for (const p of paths) {
+    if (p && typeof p === 'string') out.push(p)
+  }
+}
+
+/**
+ * Coleta paths/URLs de fotos.
+ * UNIT: fotos costumam estar no empreendimento (reDevelopment), não na unidade.
+ * THIRD_PART_PROPERTY: em property.files.pictures.
+ */
+export function collectDwvPicturePaths(link: DwvTrackedLink): string[] {
+  const paths: string[] = []
+  const prop = link.property
+  if (!prop) return paths
+
+  pushPaths(paths, prop.files?.pictures)
+  for (const g of prop.galleries ?? []) pushPaths(paths, g.files)
+
+  const dev = prop.reDevelopment
+  if (dev) {
+    pushPaths(paths, dev.files?.pictures)
+    for (const g of dev.galleries ?? []) pushPaths(paths, g.files)
+    // Se ainda vazio, usa progress/blueprints como fallback visual
+    if (paths.length === 0) {
+      pushPaths(paths, dev.files?.progressPictures)
+      pushPaths(paths, dev.files?.blueprints)
+    }
+  }
+
+  // Fallback: progress da própria unidade
+  if (paths.length === 0) {
+    pushPaths(paths, prop.files?.progressPictures)
+    pushPaths(paths, prop.files?.blueprints)
+  }
+
+  // Dedup preservando ordem
+  const seen = new Set<string>()
+  return paths.filter((p) => {
+    const key = p.replace(/^https?:\/\/[^/]+/i, '').replace(/^\//, '')
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+export function dwvDisplayTitle(link: DwvTrackedLink): string {
+  const prop = link.property
+  const unit = prop?.name?.trim()
+  const emp = prop?.reDevelopment?.name?.trim()
+  if (emp && unit && unit !== emp) return `${emp} — ${unit}`
+  return emp || unit || link.title?.trim() || 'Imóvel DWV'
 }
 
 export async function callDwv<T>(

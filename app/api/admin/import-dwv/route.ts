@@ -4,6 +4,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { propertyImagePath, type StoredImage } from '@/lib/storage'
 import {
+  collectDwvPicturePaths,
+  dwvDisplayTitle,
   dwvPictureUrl,
   extractTrackedLinkId,
   fetchTrackedLink,
@@ -104,13 +106,17 @@ export async function POST(request: Request) {
 
     const link = await fetchTrackedLink(trackedLinkId)
     const property = link.property
-    const pictures = property?.files?.pictures ?? []
+    const pictures = collectDwvPicturePaths(link)
     const fotoUrls = pictures.map(dwvPictureUrl)
+    const displayTitle = dwvDisplayTitle(link)
 
     const preview = {
       trackedLinkId,
-      title: (property?.name || link.title || '').trim(),
+      title: displayTitle,
+      empreendimento: property?.reDevelopment?.name?.trim() || null,
+      unidade: property?.name?.trim() || null,
       dwvPropertyId: property?.id,
+      propertyType: property?.propertyType,
       status: property?.status,
       totalFotos: fotoUrls.length,
     }
@@ -141,15 +147,17 @@ export async function POST(request: Request) {
         .maybeSingle()
 
       if (!existing) {
-        const title = preview.title || 'Imóvel DWV'
+        const title = displayTitle
+        const emp = preview.empreendimento || title
         const { error: insertErr } = await supabase.from('properties').insert({
           id: propertyId,
           kind: 'apartamento',
           mode: 'venda',
           status: 'rascunho',
           title,
-          unit_name: title,
-          empreendimento: title,
+          unit_name: emp,
+          empreendimento: emp,
+          unidade: preview.unidade,
           location: '',
           city: '',
           city_key: '',
@@ -252,6 +260,8 @@ export async function POST(request: Request) {
       ok: true,
       propertyId,
       title: preview.title,
+      empreendimento: preview.empreendimento,
+      unidade: preview.unidade,
       totalFotos: fotoUrls.length,
       offset,
       nextOffset,

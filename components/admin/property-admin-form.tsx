@@ -473,13 +473,20 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
           ...f,
           id: result.propertyId || f.id || propertyId,
           sourceUrl: parsed.sourceUrl || f.sourceUrl,
-          empreendimento: f.empreendimento || result.title?.trim() || f.empreendimento,
+          empreendimento:
+            f.empreendimento ||
+            result.empreendimento?.trim() ||
+            result.title?.trim() ||
+            f.empreendimento,
+          unidade: f.unidade || result.unidade?.trim() || f.unidade,
           title: f.title || result.title?.trim() || f.title,
           images: images.length > 0 ? images : f.images,
         }))
-        if (result.title?.trim()) {
+        const empName =
+          result.empreendimento?.trim() || result.title?.trim()
+        if (empName) {
           setEmpOptions((prev) =>
-            Array.from(new Set([...prev, result.title!.trim()])).sort((a, b) =>
+            Array.from(new Set([...prev, empName])).sort((a, b) =>
               a.localeCompare(b, 'pt-BR'),
             ),
           )
