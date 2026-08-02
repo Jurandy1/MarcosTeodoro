@@ -464,6 +464,9 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
           galleryUrl: parsed.sourceUrl,
           propertyId,
           replacePhotos: true,
+          onProgress: (done, total) => {
+            setPhotoProgress(`Importando fotos DWV ${done}/${total}…`)
+          },
         })
         const images = result.images ?? []
         setForm((f) => ({
@@ -935,6 +938,9 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
                               galleryUrl: form.sourceUrl,
                               propertyId: form.id.trim() || uploadFolder,
                               replacePhotos: true,
+                              onProgress: (done, total) => {
+                                setPhotoProgress(`Importando fotos DWV ${done}/${total}…`)
+                              },
                             })
                             const images = result.images ?? []
                             setForm((f) => ({

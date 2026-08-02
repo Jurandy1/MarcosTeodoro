@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import sharp from 'sharp'
 import { propertyImagePath, type StoredImage } from '@/lib/storage'
 import {
   dwvPictureUrl,
@@ -11,7 +10,9 @@ import {
 } from '@/lib/dwv'
 
 export const runtime = 'nodejs'
-export const maxDuration = 120
+export const maxDuration = 60
+
+const BATCH_DEFAULT = 3
 
 async function getSessionUser() {
   const cookieStore = await cookies()
@@ -46,10 +47,11 @@ async function downloadAsWebp(url: string): Promise<{
   width: number
   height: number
 }> {
+  const sharp = (await import('sharp')).default
   const res = await fetch(url, {
     headers: { Referer: 'https://lp.dwvapp.com.br/' },
   })
-  if (!res.ok) throw new Error(`Falha ao baixar foto (${res.status}): ${url}`)
+  if (!res.ok) throw new Error(`Falha ao baixar foto (${res.status})`)
   const input = Buffer.from(await res.arrayBuffer())
   const image = sharp(input).rotate().resize({
     width: 1600,
@@ -69,10 +71,11 @@ async function downloadAsWebp(url: string): Promise<{
 
 /**
  * POST /api/admin/import-dwv
- * Body: { gallery_url: string, propertyId?: string, dryRun?: boolean, replacePhotos?: boolean }
- *
- * Busca fotos na DWV (GraphQL público), baixa do S3, sobe no nosso bucket
- * como imoveis/{id}/{uuid}.webp e grava só path + metadata no banco.
+ * Importa em lotes (evita timeout no Vercel).
+ * Body: {
+ *   gallery_url, propertyId?, dryRun?, replacePhotos?,
+ *   offset?: number, limit?: number
+ * }
  */
 export async function POST(request: Request) {
   const user = await getSessionUser()
@@ -86,12 +89,17 @@ export async function POST(request: Request) {
       propertyId?: string
       dryRun?: boolean
       replacePhotos?: boolean
+      offset?: number
+      limit?: number
     }
 
     const galleryUrl = String(body.gallery_url || '').trim()
     const trackedLinkId = extractTrackedLinkId(galleryUrl)
     if (!trackedLinkId) {
-      return NextResponse.json({ error: 'URL inválida — UUID do tracked link não encontrado' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'URL inválida — UUID do tracked link não encontrado' },
+        { status: 400 },
+      )
     }
 
     const link = await fetchTrackedLink(trackedLinkId)
@@ -104,17 +112,7 @@ export async function POST(request: Request) {
       title: (property?.name || link.title || '').trim(),
       dwvPropertyId: property?.id,
       status: property?.status,
-      corretor: {
-        nome: link.user?.name?.trim() || null,
-        creci: link.user?.pixel || null,
-        whatsapp: link.user?.username || null,
-        email: link.user?.email || null,
-        avatar: link.user?.files?.profile
-          ? dwvPictureUrl(link.user.files.profile)
-          : null,
-      },
       totalFotos: fotoUrls.length,
-      fotosPreview: fotoUrls.slice(0, 3),
     }
 
     if (body.dryRun) {
@@ -127,55 +125,61 @@ export async function POST(request: Request) {
 
     const supabase = serviceClient()
     const now = new Date().toISOString()
-    let propertyId =
+    const propertyId =
       body.propertyId?.trim() ||
       `dwv-${property?.id?.slice(0, 8) || trackedLinkId.slice(0, 8)}`
 
-    const { data: existing } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('id', propertyId)
-      .maybeSingle()
+    const offset = Math.max(0, Number(body.offset) || 0)
+    const limit = Math.min(8, Math.max(1, Number(body.limit) || BATCH_DEFAULT))
+    const isFirstBatch = offset === 0
 
-    if (!existing) {
-      const title = preview.title || 'Imóvel DWV'
-      const { error: insertErr } = await supabase.from('properties').insert({
-        id: propertyId,
-        kind: 'apartamento',
-        mode: 'venda',
-        status: 'rascunho',
-        title,
-        unit_name: title,
-        empreendimento: title,
-        location: '',
-        city: '',
-        city_key: '',
-        bedrooms: 0,
-        bathrooms: 0,
-        parking: 0,
-        area: 0,
-        price: 'Sob consulta',
-        source_url: galleryUrl,
-        cover_url: null,
-        images: [],
-        videos: [],
-        unit_features: [],
-        amenities: [],
-        created_at: now,
-        updated_at: now,
-      })
-      if (insertErr) {
-        return NextResponse.json({ error: insertErr.message }, { status: 500 })
-      }
-    } else {
-      await supabase
+    if (isFirstBatch) {
+      const { data: existing } = await supabase
         .from('properties')
-        .update({ source_url: galleryUrl, updated_at: now })
+        .select('id')
         .eq('id', propertyId)
-    }
+        .maybeSingle()
 
-    if (body.replacePhotos !== false) {
-      await supabase.from('property_images').delete().eq('property_id', propertyId)
+      if (!existing) {
+        const title = preview.title || 'Imóvel DWV'
+        const { error: insertErr } = await supabase.from('properties').insert({
+          id: propertyId,
+          kind: 'apartamento',
+          mode: 'venda',
+          status: 'rascunho',
+          title,
+          unit_name: title,
+          empreendimento: title,
+          location: '',
+          city: '',
+          city_key: '',
+          bedrooms: 0,
+          bathrooms: 0,
+          parking: 0,
+          area: 0,
+          price: 'Sob consulta',
+          source_url: galleryUrl,
+          cover_url: null,
+          images: [],
+          videos: [],
+          unit_features: [],
+          amenities: [],
+          created_at: now,
+          updated_at: now,
+        })
+        if (insertErr) {
+          return NextResponse.json({ error: insertErr.message }, { status: 500 })
+        }
+      } else {
+        await supabase
+          .from('properties')
+          .update({ source_url: galleryUrl, updated_at: now })
+          .eq('id', propertyId)
+      }
+
+      if (body.replacePhotos !== false) {
+        await supabase.from('property_images').delete().eq('property_id', propertyId)
+      }
     }
 
     const { data: maxOrderRow } = await supabase
@@ -187,10 +191,11 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     let sortOrder = (maxOrderRow?.sort_order ?? -1) + 1
+    const batch = fotoUrls.slice(offset, offset + limit)
     const stored: StoredImage[] = []
     const errors: string[] = []
 
-    for (const url of fotoUrls) {
+    for (const url of batch) {
       try {
         const { buffer, width, height } = await downloadAsWebp(url)
         const fileName = `${crypto.randomUUID()}.webp`
@@ -228,7 +233,10 @@ export async function POST(request: Request) {
       }
     }
 
-    if (stored[0]) {
+    const nextOffset = offset + batch.length
+    const done = nextOffset >= fotoUrls.length
+
+    if (isFirstBatch && stored[0]) {
       await supabase
         .from('properties')
         .update({
@@ -243,13 +251,17 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       propertyId,
+      title: preview.title,
+      totalFotos: fotoUrls.length,
+      offset,
+      nextOffset,
+      done,
+      batch_fotos: stored.length,
       total_fotos: stored.length,
       falhas: errors.length,
       errors: errors.slice(0, 5),
       coverPath: stored[0]?.path ?? null,
       images: stored,
-      ...preview,
-      fotosPreview: undefined,
     })
   } catch (err) {
     return NextResponse.json(
