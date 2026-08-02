@@ -21,7 +21,8 @@ export function PropertyDetailView({
   const media = buildMediaItems({
     id: property.id,
     images: property.images,
-    cover: property.image,
+    cover: property.coverPath || property.image,
+    imageAssets: property.imageAssets,
     videos: property.videos,
     fakeCount: 10,
   })
@@ -137,6 +138,9 @@ export function PropertyDetailView({
                 </p>
                 {property.entrada && (
                   <p className="mt-2 text-[13px] text-[#6b7280]">Entrada: {property.entrada}</p>
+                )}
+                {property.reforco && (
+                  <p className="text-[13px] text-[#6b7280]">Reforço: {property.reforco}</p>
                 )}
                 {property.parcelamento && (
                   <p className="text-[13px] text-[#6b7280]">Parcelas: {property.parcelamento}</p>

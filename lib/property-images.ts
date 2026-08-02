@@ -1,7 +1,9 @@
 /** Tipos e helpers de mídia (fotos em massa + vídeo) */
 
+import { storageUrl } from '@/lib/storage'
+
 export type MediaItem =
-  | { type: 'image'; src: string; alt?: string }
+  | { type: 'image'; src: string; alt?: string; width?: number; height?: number }
   | {
       type: 'video'
       /** URL do arquivo mp4 ou ID/URL do YouTube/Vimeo */
@@ -39,7 +41,16 @@ function hashId(id: string) {
 }
 
 export function getFakePropertyImage(id: string, explicit?: string) {
-  if (explicit) return explicit
+  if (explicit) {
+    if (
+      !/^https?:\/\//i.test(explicit) &&
+      !explicit.startsWith('data:') &&
+      !explicit.startsWith('/')
+    ) {
+      return storageUrl(explicit)
+    }
+    return explicit
+  }
   return FAKE_PROPERTY_IMAGES[hashId(id) % FAKE_PROPERTY_IMAGES.length]
 }
 
@@ -54,6 +65,10 @@ export function buildFakeImageList(id: string, count: number, cover?: string): s
   return list
 }
 
+function resolveMediaSrc(src: string) {
+  return storageUrl(src) || src
+}
+
 export function getPropertyGallery(
   id: string,
   images?: string[],
@@ -61,9 +76,14 @@ export function getPropertyGallery(
   count = 12,
 ) {
   if (images && images.length > 0) {
-    return cover && !images.includes(cover) ? [cover, ...images] : [...images]
+    const resolved = images.map(resolveMediaSrc)
+    const coverUrl = cover ? resolveMediaSrc(cover) : undefined
+    return coverUrl && !resolved.includes(coverUrl)
+      ? [coverUrl, ...resolved]
+      : resolved
   }
-  return buildFakeImageList(id, count, cover)
+  const coverUrl = cover ? resolveMediaSrc(cover) : undefined
+  return buildFakeImageList(id, count, coverUrl)
 }
 
 export function youtubeEmbedUrl(src: string) {
@@ -121,12 +141,37 @@ export function buildMediaItems(opts: {
   id: string
   images?: string[]
   cover?: string
+  /** Paths + metadata — preferível a `images` (evita layout shift) */
+  imageAssets?: { path: string; width?: number; height?: number }[]
   videos?: MediaItem[]
   /** se não houver images, gera esta quantidade de fotos fake */
   fakeCount?: number
 }): MediaItem[] {
-  const photos = getPropertyGallery(opts.id, opts.images, opts.cover, opts.fakeCount ?? 12)
-  const items: MediaItem[] = photos.map((src) => ({ type: 'image', src }))
+  let items: MediaItem[]
+
+  if (opts.imageAssets?.length) {
+    items = opts.imageAssets.map((a) => ({
+      type: 'image' as const,
+      src: storageUrl(a.path),
+      width: a.width || undefined,
+      height: a.height || undefined,
+    }))
+    const coverUrl = opts.cover ? resolveMediaSrc(opts.cover) : undefined
+    if (coverUrl && items[0]?.type === 'image' && items[0].src !== coverUrl) {
+      items = [
+        { type: 'image', src: coverUrl },
+        ...items.filter((m) => m.type !== 'image' || m.src !== coverUrl),
+      ]
+    }
+  } else {
+    const photos = getPropertyGallery(
+      opts.id,
+      opts.images,
+      opts.cover,
+      opts.fakeCount ?? 12,
+    )
+    items = photos.map((src) => ({ type: 'image' as const, src }))
+  }
 
   if (opts.videos?.length) {
     // Vídeos no início (após a capa) — padrão de portais imobiliários

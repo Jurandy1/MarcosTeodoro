@@ -13,12 +13,26 @@ export interface CatalogProperty extends Property {
   areaPrivate?: number
   areaTotal?: number
   unitName?: string
+  /** Nome do empreendimento / condomínio */
+  empreendimento?: string
+  /** Identificação da unidade (apto, torre…) */
+  unidade?: string
   entrada?: string
+  /** Ex.: 6 x R$ 165.992,16 */
+  reforco?: string
   parcelamento?: string
   unitFeatures?: string[]
   amenities?: string[]
   address?: string
-  /** Galeria de fotos (suporta 60+) */
+  /** CEP do imóvel */
+  cep?: string
+  /** Link original (DWV / landing) */
+  sourceUrl?: string
+  /** Path relativo da capa no storage (agnóstico ao provider) */
+  coverPath?: string
+  /** Fotos com path relativo + metadata */
+  imageAssets?: import('@/lib/storage').StoredImage[]
+  /** Galeria de fotos — URLs absolutas (demo) ou resolvidas no front */
   images?: string[]
   /** Vídeos do imóvel (arquivo, YouTube ou Vimeo) */
   videos?: Extract<MediaItem, { type: 'video' }>[]

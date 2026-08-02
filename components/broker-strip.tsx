@@ -1,19 +1,27 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  BUDGET_BANDS,
+  fetchConsultants,
+  type Consultant,
+} from '@/lib/supabase/settings-api'
 
 const MARCOS_PHOTO_2 =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/marcos-JBAkoIxvj0GDhvLLo503L00XTpnJTP.jpg'
 
-const BROKER_WHATSAPP = {
-  ate1m: { name: 'Corretor X', phone: '5547991594019' },
-  de1a2: { name: 'Corretor Y', phone: '5547991594019' },
-  de2a3: { name: 'Corretor W', phone: '5547991594019' },
+const FALLBACK_BROKERS: Record<
+  Consultant['budget_band'],
+  { name: string; phone: string }
+> = {
+  ate1m: { name: 'Consultor', phone: '5547991594019' },
+  de1a2: { name: 'Consultor', phone: '5547991594019' },
+  de2a3: { name: 'Consultor', phone: '5547991594019' },
   acima3m: { name: 'Marcos Teodoro', phone: '5547991594019' },
-} as const
+}
 
-type BudgetId = keyof typeof BROKER_WHATSAPP
+type BudgetId = Consultant['budget_band']
 type City = 'Balneário Camboriú' | 'Itapema' | 'Porto Belo' | 'Bombinhas'
 
 const CITY_OPTIONS: City[] = [
@@ -23,18 +31,34 @@ const CITY_OPTIONS: City[] = [
   'Bombinhas',
 ]
 
-const BUDGET_OPTIONS: { id: BudgetId; label: string }[] = [
-  { id: 'ate1m', label: 'Até 1 milhão' },
-  { id: 'de1a2', label: 'De 1 milhão até 2 milhões' },
-  { id: 'de2a3', label: 'De 2 milhões a 3 milhões' },
-  { id: 'acima3m', label: 'Acima de 3 milhões' },
-]
-
 export function BrokerStrip() {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [city, setCity] = useState<City | null>(null)
   const [budget, setBudget] = useState<BudgetId | null>(null)
+  const [consultants, setConsultants] = useState<Consultant[]>([])
+
+  useEffect(() => {
+    void fetchConsultants(false)
+      .then(setConsultants)
+      .catch(() => setConsultants([]))
+  }, [])
+
+  const budgetOptions = useMemo(() => {
+    if (consultants.length === 0) return BUDGET_BANDS
+    return BUDGET_BANDS.filter((b) =>
+      consultants.some((c) => c.budget_band === b.id && c.active),
+    ).map((b) => ({
+      ...b,
+      label: consultants.find((c) => c.budget_band === b.id)?.budget_label || b.label,
+    }))
+  }, [consultants])
+
+  const resolveBroker = (band: BudgetId) => {
+    const c = consultants.find((x) => x.budget_band === band && x.active)
+    if (c) return { name: c.name, phone: c.whatsapp.replace(/\D/g, '') }
+    return FALLBACK_BROKERS[band]
+  }
 
   const reset = () => {
     setStep(0)
@@ -71,8 +95,11 @@ export function BrokerStrip() {
 
   const whatsappUrl = () => {
     if (!city || !budget) return '#'
-    const broker = BROKER_WHATSAPP[budget]
-    const budgetLabel = BUDGET_OPTIONS.find((b) => b.id === budget)?.label ?? ''
+    const broker = resolveBroker(budget)
+    const budgetLabel =
+      budgetOptions.find((b) => b.id === budget)?.label ??
+      BUDGET_BANDS.find((b) => b.id === budget)?.label ??
+      ''
     const text = [
       `Olá ${broker.name}, vim pelo site do Marcos Teodoro.`,
       `Quero investir em ${city}.`,
@@ -187,7 +214,7 @@ export function BrokerStrip() {
                     Cidade: <span className="text-[#0b1420] font-medium">{city}</span>
                   </p>
                 )}
-                {BUDGET_OPTIONS.map((opt) => (
+                {budgetOptions.map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
