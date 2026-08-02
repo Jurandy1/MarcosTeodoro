@@ -70,7 +70,14 @@ function parseMoney(raw: string): { formatted: string; value: number } | null {
   return { formatted: `R$\u00a0${numPart.includes(',') ? numPart : `${numPart},00`}`, value }
 }
 
-function extractBullets(block: string): string[] {
+function parseAreaNumber(raw: string): number {
+  const s = raw.trim()
+  // BR com milhar: 1.234,5 → 1234.5 | decimal com ponto: 195.1 → 195.1
+  if (s.includes(',')) {
+    return Number(s.replace(/\./g, '').replace(',', '.'))
+  }
+  return Number(s)
+}
   return block
     .split(/\r?\n/)
     .map((l) => l.replace(/^[\s*•\-–—]+/, '').trim())
@@ -169,12 +176,12 @@ export function parseListingPaste(text: string): ParsedListing {
 
   const areaPriv = raw.match(/\*?Área\s+privativa\*?\s*:?\s*([\d.,]+)\s*m/i)
   if (areaPriv) {
-    result.areaPrivate = Number(areaPriv[1].replace(/\./g, '').replace(',', '.'))
+    result.areaPrivate = parseAreaNumber(areaPriv[1])
   }
 
   const areaTot = raw.match(/\*?Área\s+total\*?\s*:?\s*([\d.,]+)\s*m/i)
   if (areaTot) {
-    result.areaTotal = Number(areaTot[1].replace(/\./g, '').replace(',', '.'))
+    result.areaTotal = parseAreaNumber(areaTot[1])
   }
 
   const specs = raw.match(

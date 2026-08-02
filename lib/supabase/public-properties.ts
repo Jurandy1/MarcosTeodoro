@@ -28,7 +28,14 @@ export async function fetchPublicProperties(mode?: PropertyMode): Promise<Catalo
     if (error || !data) return []
     const rows = data as PropertyRow[]
     const imagesMap = await fetchImageMap(rows.map((r) => r.id))
-    return rows.map((r) => fromRow(r, imagesMap[r.id] ?? []))
+    const seen = new Set<string>()
+    return rows
+      .map((r) => fromRow(r, imagesMap[r.id] ?? []))
+      .filter((p) => {
+        if (seen.has(p.id)) return false
+        seen.add(p.id)
+        return true
+      })
   } catch {
     return []
   }

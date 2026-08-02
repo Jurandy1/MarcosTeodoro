@@ -30,14 +30,19 @@ export function AutoScrollRow({
   const startOffsetRef = useRef(0)
   const movedRef = useRef(false)
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const loop = [...properties, ...properties]
+  // Com poucos cards, não clona — senão a home parece ter imóveis duplicados
+  const shouldLoop = properties.length >= 4
+  const loop = shouldLoop ? [...properties, ...properties] : properties
 
   useEffect(() => {
     const track = trackRef.current
-    if (!track || properties.length === 0) return
+    if (!track || properties.length === 0 || !shouldLoop) {
+      if (track) track.style.transform = 'translate3d(0,0,0)'
+      return
+    }
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduceMotion) return
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) return
 
     const speed = reverse ? -SPEED : SPEED
     let raf = 0
@@ -51,7 +56,6 @@ export function AutoScrollRow({
       while (offsetRef.current < 0) offsetRef.current += half
     }
 
-    // Sentido inverso começa no meio do loop
     if (reverse) {
       offsetRef.current = halfWidth() / 2
     }
@@ -73,7 +77,7 @@ export function AutoScrollRow({
 
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [properties.length, reverse])
+  }, [properties.length, reverse, shouldLoop])
 
   useEffect(() => {
     return () => {
@@ -121,10 +125,15 @@ export function AutoScrollRow({
     offsetRef.current = startOffsetRef.current - dx
     const track = trackRef.current
     if (!track) return
-    const half = track.scrollWidth / 2
-    if (half > 0) {
-      while (offsetRef.current >= half) offsetRef.current -= half
-      while (offsetRef.current < 0) offsetRef.current += half
+    if (shouldLoop) {
+      const half = track.scrollWidth / 2
+      if (half > 0) {
+        while (offsetRef.current >= half) offsetRef.current -= half
+        while (offsetRef.current < 0) offsetRef.current += half
+      }
+    } else {
+      const max = Math.max(0, track.scrollWidth - (track.parentElement?.clientWidth ?? 0))
+      offsetRef.current = Math.min(Math.max(0, offsetRef.current), max)
     }
     track.style.transform = `translate3d(${-offsetRef.current}px,0,0)`
   }
