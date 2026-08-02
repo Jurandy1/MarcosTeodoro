@@ -312,13 +312,15 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       const matched = matchCityKey(data.city, CITY_FILTERS)
       setForm((f) => ({
         ...f,
-        address: data.address || f.address,
-        city: data.city || f.city,
+        // Mantém o endereço colado do anúncio; geocode só completa cidade/CEP/mapa
+        address: f.address.trim() || data.address || f.address,
+        city: matched || data.city || f.city,
         cityKey: matched || f.cityKey,
         location:
-          data.neighborhood && data.city
+          matched ||
+          (data.neighborhood && data.city
             ? `${data.city}, ${data.neighborhood}`
-            : data.city || f.location,
+            : data.city || f.location),
         cep: data.cep ? formatCep(data.cep) : f.cep,
         lat: String(data.lat),
         lng: String(data.lng),

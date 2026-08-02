@@ -79,7 +79,7 @@ function extractBullets(block: string): string[] {
 
 function detectCity(address: string): { cityKey?: string; city?: string } {
   const m = address.match(
-    /,\s*(Balneário Camboriú|Itapema|Porto Belo|Bombinhas|Itajaí)\s*(?:\/\s*SC)?/i,
+    /(?:,\s*|\s+)(Balneário Camboriú|Itapema|Porto Belo|Bombinhas|Itajaí)\s*(?:\/\s*SC)?/i,
   )
   if (!m) {
     const alone = address.match(
@@ -91,6 +91,43 @@ function detectCity(address: string): { cityKey?: string; city?: string } {
   }
   const name = m[1]
   return { cityKey: name, city: name }
+}
+
+/** Evita falso positivo: "Av" dentro de "Americana", "Lavabo", etc. */
+const STREET_LINE_RE =
+  /^\s*((?:Rua|R\.|Avenida|Av\.|Rodovia|Rod\.|Travessa|Tv\.|Alameda|Al\.)\s+.+)$/i
+
+function extractAddress(raw: string): string | null {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\*+/g, '').trim())
+    .filter(Boolean)
+
+  // Preferir linhas no final do anúncio (antes de assinatura / link DWV)
+  const candidates: string[] = []
+  for (const line of lines) {
+    if (/^[-•–—]/.test(line)) continue // item de lista
+    if (/^(descri|atenciosamente|entrada|refor|parcel|valor|área|unidade|empreendimento)/i.test(line)) {
+      continue
+    }
+    if (/https?:\/\//i.test(line) && !STREET_LINE_RE.test(line)) continue
+
+    const street = line.match(STREET_LINE_RE)
+    if (street) {
+      candidates.push(street[1].replace(/\s+https?:\/\/\S+/i, '').trim())
+      continue
+    }
+    // "…, Bombinhas/SC" sem prefixo de logradouro
+    if (
+      /,\s*(Balneário Camboriú|Itapema|Porto Belo|Bombinhas|Itajaí)\s*\/\s*SC\s*$/i.test(line)
+    ) {
+      candidates.push(line)
+    }
+  }
+
+  if (candidates.length === 0) return null
+  // Último candidato costuma ser o endereço real do anúncio
+  return candidates[candidates.length - 1]
 }
 
 export function parseListingPaste(text: string): ParsedListing {
@@ -186,33 +223,35 @@ export function parseListingPaste(text: string): ParsedListing {
   }
 
   const unitBlock = raw.match(
-    /\*?Descri[cç][aã]o\s+(?:da\s+)?unidade\*?\s*:?\s*([\s\S]*?)(?=\*?Descri[cç][aã]o\s+(?:do\s+)?empreendimento|\nRua\b|\nAv(?:enida)?\b|https?:\/\/|$)/i,
+    /\*?Descri[cç][aã]o\s+(?:da\s+)?unidade\*?\s*:?\s*([\s\S]*?)(?=\*?Descri[cç][aã]o\s+(?:do\s+)?empreendimento|\n\s*Rua\b|\n\s*Av\.|\n\s*Avenida\b|Atenciosamente|https?:\/\/|$)/i,
   )
   if (unitBlock) {
     result.unitFeatures = extractBullets(unitBlock[1])
   }
 
   const empBlock = raw.match(
-    /\*?Descri[cç][aã]o\s+(?:do\s+)?empreendimento\*?\s*:?\s*([\s\S]*?)(?=\nRua\b|\nAv(?:enida)?\b|Atenciosamente|https?:\/\/|$)/i,
+    /\*?Descri[cç][aã]o\s+(?:do\s+)?empreendimento\*?\s*:?\s*([\s\S]*?)(?=\n\s*Rua\b|\n\s*Av\.|\n\s*Avenida\b|Atenciosamente|https?:\/\/|$)/i,
   )
   if (empBlock) {
     result.amenities = extractBullets(empBlock[1])
   }
 
-  const address =
-    raw.match(
-      /((?:Rua|Av\.?|Avenida|Rodovia|Travessa|Alameda)[^\n]+(?:,\s*[^\n]+)?)/i,
-    ) || raw.match(/([^\n]+\/\s*SC)\s*(?:\n|$)/i)
-  if (address) {
-    const addr = address[1].replace(/Atenciosamente.*/i, '').trim()
+  const addr = extractAddress(raw)
+  if (addr) {
     result.address = addr
     const city = detectCity(addr)
-    result.cityKey = city.cityKey
-    result.city = city.city ?? city.cityKey
-    result.location = city.cityKey ? `${city.cityKey}` : addr
+    if (city.cityKey) {
+      result.cityKey = city.cityKey
+      result.city = city.cityKey
+      result.location = city.cityKey
+    } else {
+      result.location = addr
+    }
   }
 
-  const cepMatch = raw.match(/\b(\d{5})-?(\d{3})\b/)
+  // CEP só se parecer CEP de verdade (evita pegar pedaço de valor/área)
+  const cepMatch =
+    raw.match(/\bCEP\s*:?\s*(\d{5})-?(\d{3})\b/i) || raw.match(/\b(\d{5})-(\d{3})\b/)
   if (cepMatch) {
     result.cep = `${cepMatch[1]}-${cepMatch[2]}`
   }
