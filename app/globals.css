@@ -106,14 +106,6 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-@keyframes marqueeR {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
-}
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -124,44 +116,33 @@
 .anim-3 { animation: fadeUp 0.9s cubic-bezier(.2,.7,.2,1) 0.35s both; }
 .anim-4 { animation: fadeUp 0.9s cubic-bezier(.2,.7,.2,1) 0.5s both; }
 
-/* Carrossel automático — CSS (estável no desktop e mobile) */
+/* Carrossel automático — scroll nativo (arrasta no mobile, retoma sozinho) */
+.auto-scroll-scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.auto-scroll-scroller::-webkit-scrollbar {
+  display: none;
+}
 .auto-scroll-track {
   display: flex;
   width: max-content;
   gap: 0.75rem;
   padding-inline: 1rem;
-  animation: marquee 42s linear infinite;
-  will-change: transform;
-}
-.auto-scroll-track.reverse {
-  animation-name: marqueeR;
-  animation-duration: 48s;
-}
-.auto-scroll-track.is-paused {
-  animation-play-state: paused;
 }
 @media (min-width: 1024px) {
   .auto-scroll-track {
     gap: 1.25rem;
     padding-inline: 1.5rem;
-    animation-duration: 50s;
-  }
-  .auto-scroll-track.reverse {
-    animation-duration: 56s;
   }
 }
 @media (max-width: 640px) {
   .auto-scroll-track {
     gap: 0.625rem;
     padding-inline: 0.875rem;
-    animation-duration: 36s;
-  }
-  .auto-scroll-track.reverse {
-    animation-duration: 40s;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .auto-scroll-track {
-    animation: none;
   }
 }
