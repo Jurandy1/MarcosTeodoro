@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type MouseEvent, type PointerEvent } from 'react'
 import { PropertyCard } from '@/components/property-card'
 import type { CatalogProperty } from '@/lib/properties'
 
-const RESUME_MS = 2200
-const SPEED = 0.5
+const RESUME_MS = 2000
+const SPEED = 0.45
 
 export function AutoScrollRow({
   id,
@@ -21,37 +21,52 @@ export function AutoScrollRow({
   properties: CatalogProperty[]
   reverse?: boolean
 }) {
-  const scrollerRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const offsetRef = useRef(0)
   const pausedRef = useRef(false)
-  const autoRef = useRef(false)
-  const touchingRef = useRef(false)
+  const draggingRef = useRef(false)
+  const pointerIdRef = useRef<number | null>(null)
+  const startXRef = useRef(0)
+  const startOffsetRef = useRef(0)
+  const movedRef = useRef(false)
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loop = [...properties, ...properties]
 
   useEffect(() => {
-    const el = scrollerRef.current
-    if (!el || properties.length === 0) return
+    const track = trackRef.current
+    if (!track || properties.length === 0) return
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduceMotion) return
 
-    autoRef.current = true
-    if (reverse) el.scrollLeft = el.scrollWidth / 2
-    autoRef.current = false
-
     const speed = reverse ? -SPEED : SPEED
     let raf = 0
 
+    const halfWidth = () => track.scrollWidth / 2
+
+    const normalize = () => {
+      const half = halfWidth()
+      if (half <= 0) return
+      while (offsetRef.current >= half) offsetRef.current -= half
+      while (offsetRef.current < 0) offsetRef.current += half
+    }
+
+    // Sentido inverso começa no meio do loop
+    if (reverse) {
+      offsetRef.current = halfWidth() / 2
+    }
+
+    const apply = () => {
+      normalize()
+      track.style.transform = `translate3d(${-offsetRef.current}px,0,0)`
+    }
+
+    apply()
+
     const tick = () => {
       if (!pausedRef.current) {
-        autoRef.current = true
-        el.scrollLeft += speed
-        const half = el.scrollWidth / 2
-        if (half > 0) {
-          if (el.scrollLeft >= half) el.scrollLeft -= half
-          if (el.scrollLeft <= 0) el.scrollLeft += half
-        }
-        autoRef.current = false
+        offsetRef.current += speed
+        apply()
       }
       raf = requestAnimationFrame(tick)
     }
@@ -79,7 +94,6 @@ export function AutoScrollRow({
   }
 
   const scheduleResume = () => {
-    if (touchingRef.current) return
     clearResume()
     resumeTimerRef.current = setTimeout(() => {
       pausedRef.current = false
@@ -87,22 +101,53 @@ export function AutoScrollRow({
     }, RESUME_MS)
   }
 
-  const onTouchStart = () => {
-    touchingRef.current = true
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    // Só arraste com toque / mouse principal
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    draggingRef.current = true
+    movedRef.current = false
+    pointerIdRef.current = e.pointerId
+    startXRef.current = e.clientX
+    startOffsetRef.current = offsetRef.current
     pause()
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
 
-  const onTouchEnd = () => {
-    touchingRef.current = false
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || pointerIdRef.current !== e.pointerId) return
+    const dx = e.clientX - startXRef.current
+    if (Math.abs(dx) > 6) movedRef.current = true
+    // Arrastar para a direita = voltar nos imóveis que já passaram
+    offsetRef.current = startOffsetRef.current - dx
+    const track = trackRef.current
+    if (!track) return
+    const half = track.scrollWidth / 2
+    if (half > 0) {
+      while (offsetRef.current >= half) offsetRef.current -= half
+      while (offsetRef.current < 0) offsetRef.current += half
+    }
+    track.style.transform = `translate3d(${-offsetRef.current}px,0,0)`
+  }
+
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (pointerIdRef.current !== e.pointerId) return
+    draggingRef.current = false
+    pointerIdRef.current = null
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
     scheduleResume()
   }
 
-  const onUserScroll = () => {
-    // Ignora o scroll que o próprio auto-scroll provoca
-    if (autoRef.current) return
-    pause()
-    // Com o dedo ainda no ecrã não retoma; no momentum após soltar, reinicia o timer
-    scheduleResume()
+  const onClickCapture = (e: MouseEvent) => {
+    // Evita abrir o imóvel se o gesto foi arrastar
+    if (movedRef.current) {
+      e.preventDefault()
+      e.stopPropagation()
+      movedRef.current = false
+    }
   }
 
   return (
@@ -119,7 +164,7 @@ export function AutoScrollRow({
         </Link>
       </div>
 
-      <div className="relative">
+      <div className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute inset-y-0 left-0 w-8 sm:w-16 z-10"
           style={{ background: 'linear-gradient(90deg,#f7f5f1 15%,transparent)' }}
@@ -132,18 +177,14 @@ export function AutoScrollRow({
         />
 
         <div
-          ref={scrollerRef}
-          className="auto-scroll-scroller"
-          onPointerDown={onTouchStart}
-          onPointerUp={onTouchEnd}
-          onPointerCancel={onTouchEnd}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          onTouchCancel={onTouchEnd}
-          onScroll={onUserScroll}
-          onWheel={onUserScroll}
+          className="auto-scroll-viewport"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onClickCapture={onClickCapture}
         >
-          <div className="auto-scroll-track">
+          <div ref={trackRef} className="auto-scroll-track">
             {loop.map((p, i) => (
               <div
                 key={`${p.id}-${i}`}
