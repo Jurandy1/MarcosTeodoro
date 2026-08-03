@@ -120,11 +120,14 @@
 .auto-scroll-viewport {
   touch-action: pan-y;
   cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
 }
 .auto-scroll-viewport:active {
   cursor: grabbing;
+}
+.auto-scroll-viewport a {
+  /* Clique no card deve ser imediato; arraste só depois do limiar no JS */
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .auto-scroll-track {
   display: flex;

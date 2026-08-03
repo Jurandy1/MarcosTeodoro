@@ -7,6 +7,8 @@ import type { CatalogProperty } from '@/lib/properties'
 
 const RESUME_MS = 2000
 const SPEED = 0.45
+/** Só conta como arraste depois disso — evita engolir clique (dedo/mouse tremem ~6–10px). */
+const DRAG_THRESHOLD_PX = 14
 
 export function AutoScrollRow({
   id,
@@ -22,13 +24,14 @@ export function AutoScrollRow({
   reverse?: boolean
 }) {
   const trackRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const offsetRef = useRef(0)
   const pausedRef = useRef(false)
-  const draggingRef = useRef(false)
   const pointerIdRef = useRef<number | null>(null)
   const startXRef = useRef(0)
   const startOffsetRef = useRef(0)
-  const movedRef = useRef(false)
+  /** true só depois de passar o limiar de arraste */
+  const didDragRef = useRef(false)
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Com poucos cards, não clona — senão a home parece ter imóveis duplicados
   const shouldLoop = properties.length >= 4
@@ -105,24 +108,7 @@ export function AutoScrollRow({
     }, RESUME_MS)
   }
 
-  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    // Só arraste com toque / mouse principal
-    if (e.pointerType === 'mouse' && e.button !== 0) return
-    draggingRef.current = true
-    movedRef.current = false
-    pointerIdRef.current = e.pointerId
-    startXRef.current = e.clientX
-    startOffsetRef.current = offsetRef.current
-    pause()
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-
-  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || pointerIdRef.current !== e.pointerId) return
-    const dx = e.clientX - startXRef.current
-    if (Math.abs(dx) > 6) movedRef.current = true
-    // Arrastar para a direita = voltar nos imóveis que já passaram
-    offsetRef.current = startOffsetRef.current - dx
+  const applyOffset = () => {
     const track = trackRef.current
     if (!track) return
     if (shouldLoop) {
@@ -138,24 +124,59 @@ export function AutoScrollRow({
     track.style.transform = `translate3d(${-offsetRef.current}px,0,0)`
   }
 
-  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    // Não captura ainda — deixa o clique no card funcionar no 1º toque
+    pointerIdRef.current = e.pointerId
+    didDragRef.current = false
+    startXRef.current = e.clientX
+    startOffsetRef.current = offsetRef.current
+    pause()
+  }
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     if (pointerIdRef.current !== e.pointerId) return
-    draggingRef.current = false
+    const dx = e.clientX - startXRef.current
+
+    if (!didDragRef.current) {
+      if (Math.abs(dx) < DRAG_THRESHOLD_PX) return
+      // Agora sim: é arraste
+      didDragRef.current = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+    }
+
+    e.preventDefault()
+    offsetRef.current = startOffsetRef.current - dx
+    applyOffset()
+  }
+
+  const endPointer = (e: PointerEvent<HTMLDivElement>) => {
+    if (pointerIdRef.current !== e.pointerId) return
     pointerIdRef.current = null
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId)
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      }
     } catch {
       /* ignore */
     }
     scheduleResume()
   }
 
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    endPointer(e)
+  }
+
   const onClickCapture = (e: MouseEvent) => {
-    // Evita abrir o imóvel se o gesto foi arrastar
-    if (movedRef.current) {
+    // Só cancela navegação se realmente arrastou
+    if (didDragRef.current) {
       e.preventDefault()
       e.stopPropagation()
-      movedRef.current = false
+      didDragRef.current = false
     }
   }
 
@@ -186,6 +207,7 @@ export function AutoScrollRow({
         />
 
         <div
+          ref={viewportRef}
           className="auto-scroll-viewport"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
