@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { propertyImagePath } from '@/lib/storage'
 import type { StoredImage } from '@/lib/storage'
+import { isAllowedAdminEmail } from '@/lib/admin-auth'
 
 export const runtime = 'nodejs'
 
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
   const user = await getSessionUser()
   if (!user) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  }
+  if (!isAllowedAdminEmail(user.email)) {
+    return NextResponse.json({ error: 'Sem permissão de admin' }, { status: 403 })
   }
 
   const form = await request.formData()
@@ -81,4 +85,41 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(stored)
+}
+
+export async function DELETE(request: Request) {
+  const user = await getSessionUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  }
+  if (!isAllowedAdminEmail(user.email)) {
+    return NextResponse.json({ error: 'Sem permissão de admin' }, { status: 403 })
+  }
+
+  const body = (await request.json().catch(() => null)) as {
+    paths?: string[]
+    path?: string
+  } | null
+
+  const paths = [
+    ...(body?.paths ?? []),
+    ...(body?.path ? [body.path] : []),
+  ].filter((p) => typeof p === 'string' && p.startsWith('imoveis/'))
+
+  if (paths.length === 0) {
+    return NextResponse.json({ error: 'Nenhum path válido' }, { status: 400 })
+  }
+
+  const service = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+
+  const { error } = await service.storage.from('property-photos').remove(paths)
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, removed: paths.length })
 }

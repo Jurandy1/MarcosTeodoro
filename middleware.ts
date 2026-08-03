@@ -40,7 +40,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (isAdmin && !isLogin && user) {
+    const { isAllowedAdminEmail } = await import('@/lib/admin-auth')
+    if (!isAllowedAdminEmail(user.email)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      url.searchParams.set('error', 'forbidden')
+      // Encerra sessão de quem não é admin
+      await supabase.auth.signOut()
+      return NextResponse.redirect(url)
+    }
+  }
+
   if (isLogin && user) {
+    const { isAllowedAdminEmail } = await import('@/lib/admin-auth')
+    if (!isAllowedAdminEmail(user.email)) {
+      await supabase.auth.signOut()
+      return response
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/admin'
     return NextResponse.redirect(url)

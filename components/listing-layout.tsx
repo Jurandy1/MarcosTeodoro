@@ -21,11 +21,18 @@ interface ListingLayoutProps {
   mode: PropertyMode
 }
 
-const PRICE_PRESETS = [
+const PRICE_PRESETS_VENDA = [
   { label: 'Até 2 mi', value: 2000000 },
   { label: 'Até 4 mi', value: 4000000 },
   { label: 'Até 7 mi', value: 7000000 },
   { label: 'Até 15 mi', value: 15000000 },
+]
+
+const PRICE_PRESETS_ALUGUEL = [
+  { label: 'Até 3 mil', value: 3000 },
+  { label: 'Até 6 mil', value: 6000 },
+  { label: 'Até 10 mil', value: 10000 },
+  { label: 'Até 20 mil', value: 20000 },
 ]
 
 export function ListingLayout({ title, titleEm, subtitle, properties, mode }: ListingLayoutProps) {
@@ -180,9 +187,9 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
               ))}
             </QuickRow>
 
-            {mode === 'venda' && (
+            {(mode === 'venda' || mode === 'aluguel') && (
               <QuickRow label="Valor">
-                {PRICE_PRESETS.map((p) => (
+                {(mode === 'venda' ? PRICE_PRESETS_VENDA : PRICE_PRESETS_ALUGUEL).map((p) => (
                   <QuickChip
                     key={p.value}
                     active={priceMax === p.value}

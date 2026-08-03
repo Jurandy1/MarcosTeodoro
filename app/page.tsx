@@ -6,26 +6,46 @@ import { SiteFooter } from '@/components/site-footer'
 import { BrokerStrip } from '@/components/broker-strip'
 import { AutoScrollRow } from '@/components/auto-scroll-row'
 import { fetchPublicProperties } from '@/lib/supabase/public-properties'
+import { agentJsonLd, JsonLd } from '@/lib/seo'
+import {
+  getPublicSiteSettings,
+  whatsappUrl,
+} from '@/lib/site-settings'
 
 const MARCOS_PHOTO =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/amrcos-AyeiWeXupJzq8ST9I0UpYvAXaaRlPf.jpg'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const settings = await getPublicSiteSettings()
+
   return (
     <>
+      <JsonLd data={agentJsonLd(settings)} />
       <Topbar />
       <SiteHeader />
       <main>
-        <HeroSection />
+        <HeroSection
+          creci={settings.creci}
+          whatsappHref={whatsappUrl(
+            settings.whatsapp,
+            'Olá Marcos, vi o site e gostaria de saber mais sobre os imóveis.',
+          )}
+        />
         <PropertiesCarousel />
-        <BrokerStrip />
+        <BrokerStrip defaultWhatsapp={settings.whatsapp} />
       </main>
       <SiteFooter />
     </>
   )
 }
 
-function HeroSection() {
+function HeroSection({
+  creci,
+  whatsappHref,
+}: {
+  creci: string
+  whatsappHref: string
+}) {
   return (
     <section id="sobre" className="relative text-white overflow-hidden" style={{ background: '#0b1420' }}>
       <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
@@ -49,7 +69,7 @@ function HeroSection() {
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_380px] items-end gap-6 md:gap-10 lg:gap-12 pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-14 lg:pb-16">
         <div className="order-2 md:order-1 pb-1">
           <div className="anim-1 text-[#c9a35a] text-[0.72rem] sm:text-[0.62rem] font-semibold tracking-[.16em] sm:tracking-[.2em] uppercase mb-2.5 sm:mb-3">
-            Consultor imobiliário | CRECI SC 71914
+            Consultor imobiliário | {creci}
           </div>
           <h1 className="anim-2 font-serif text-[2.1rem] sm:text-[2.75rem] lg:text-[3.1rem] font-medium leading-[1.08] tracking-tight mb-3">
             Marcos <span className="text-[#c9a35a]">Teodoro</span>
@@ -59,10 +79,26 @@ function HeroSection() {
             <br />
             Ele merece uma boa decisão.
           </p>
-          <p className="anim-3 text-[#c8ccd1]/90 text-[0.9rem] sm:text-[0.9rem] leading-relaxed max-w-[46ch]">
+          <p className="anim-3 text-[#c8ccd1]/90 text-[0.9rem] sm:text-[0.9rem] leading-relaxed max-w-[46ch] mb-5">
             Especialista em imóveis de alto padrão no litoral norte de Santa Catarina, ajudando
             famílias e investidores a escolher imóveis com segurança, estratégia e confiança.
           </p>
+          <div className="anim-3 flex flex-wrap gap-3">
+            <Link
+              href="/vendas"
+              className="inline-flex min-h-[44px] items-center px-5 bg-[#c9a35a] text-[#0b1420] text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:bg-[#d4b46e] transition-colors"
+            >
+              Ver imóveis
+            </Link>
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center px-5 border border-white/40 text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:bg-white/10 transition-colors"
+            >
+              WhatsApp
+            </a>
+          </div>
         </div>
 
         <div className="order-1 md:order-2 flex justify-center md:justify-end">
@@ -107,7 +143,33 @@ async function PropertiesCarousel() {
   const houses = sale.filter((p) => p.kind === 'casa')
 
   if (apartments.length === 0 && houses.length === 0) {
-    return null
+    return (
+      <section className="bg-[#f7f5f1] border-y border-[#ebe8e2]">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
+          <h2 className="font-serif text-[1.35rem] sm:text-[1.55rem] text-[#0b1420]">
+            Imóveis no litoral
+          </h2>
+          <p className="mt-2 text-[0.9rem] text-[#6f7680] max-w-[40ch] mx-auto">
+            Novos imóveis em breve. Enquanto isso, fale comigo pelo WhatsApp ou veja a página de
+            contato.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/contato"
+              className="inline-flex min-h-[42px] items-center px-4 bg-[#0b1420] text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase"
+            >
+              Contato
+            </Link>
+            <Link
+              href="/vendas"
+              className="inline-flex min-h-[42px] items-center px-4 border border-[#0e6b7a] text-[#0e6b7a] text-[0.68rem] font-semibold tracking-[.1em] uppercase"
+            >
+              Ver vendas
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (

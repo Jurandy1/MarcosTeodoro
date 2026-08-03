@@ -1,6 +1,16 @@
 import Link from 'next/link'
+import {
+  getPublicSiteSettings,
+  whatsappUrl,
+} from '@/lib/site-settings'
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const s = await getPublicSiteSettings()
+  const wa = whatsappUrl(
+    s.whatsapp,
+    'Olá, tenho interesse em imóveis no litoral.',
+  )
+
   return (
     <footer className="bg-[#0b1420] text-[#a9abaf] text-[0.78rem]">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 py-8 sm:py-12">
@@ -17,9 +27,12 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="text-[0.8rem] leading-relaxed text-[#8b8f96] mb-4 max-w-[32ch]">
-            Especialista em investimentos imobiliários de alto padrão no litoral norte de Santa Catarina
+            Especialista em investimentos imobiliários de alto padrão no litoral norte de Santa
+            Catarina
           </p>
-          <p className="text-[0.72rem] sm:text-[0.68rem] tracking-[.1em] text-[#5a6069]">CRECI SC 71914</p>
+          <p className="text-[0.72rem] sm:text-[0.68rem] tracking-[.1em] text-[#5a6069]">
+            {s.creci}
+          </p>
         </div>
 
         <div>
@@ -46,11 +59,11 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-white/[0.08] text-center py-5 text-[0.72rem] sm:text-[0.65rem] text-[#5a6069] tracking-[.06em]">
-        &copy; {new Date().getFullYear()} Marcos Teodoro. Todos os direitos reservados.
+        &copy; {new Date().getFullYear()} {s.companyName}. Todos os direitos reservados.
       </div>
 
       <a
-        href="https://wa.me/5547991594019?text=Olá%2C%20tenho%20interesse%20em%20imóveis%20no%20litoral."
+        href={wa}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Fale pelo WhatsApp"

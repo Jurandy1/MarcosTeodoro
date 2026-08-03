@@ -42,7 +42,7 @@ export default function AdminSeoPage() {
     setMsg(null)
     try {
       await saveSiteSettings(form)
-      setMsg('SEO salvo.')
+      setMsg('SEO salvo — já aplicado no site público (pode levar alguns segundos no cache).')
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Erro ao salvar')
     } finally {
@@ -112,6 +112,19 @@ export default function AdminSeoPage() {
         </div>
 
         {msg && <p className="text-[0.88rem] text-[#0e6b7a]">{msg}</p>}
+
+        <div className="border border-[#ebe8e2] bg-[#faf9f7] p-4">
+          <p className="text-[0.58rem] font-semibold tracking-[.12em] uppercase text-[#9aa0a6] mb-2">
+            Prévia no Google
+          </p>
+          <p className="text-[1.05rem] text-[#1a0dab] leading-snug truncate">
+            {form.seo_title || 'Título da página'}
+          </p>
+          <p className="text-[0.78rem] text-[#006621] mt-0.5">marcosteodoro.com.br</p>
+          <p className="text-[0.82rem] text-[#4a5560] mt-1 line-clamp-2">
+            {form.seo_description || 'Meta description aparece aqui.'}
+          </p>
+        </div>
 
         <button
           type="submit"

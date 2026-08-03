@@ -76,7 +76,29 @@ export async function uploadPropertyPhotos(
   return results
 }
 
-export async function removePropertyPhoto(_path: string): Promise<void> {
-  // Remoção física no bucket pode ser feita depois (job de limpeza).
-  void _path
+export async function removePropertyPhoto(path: string): Promise<void> {
+  if (!path || !path.startsWith('imoveis/')) return
+  try {
+    await fetch('/api/admin/upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    })
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function removePropertyPhotos(paths: string[]): Promise<void> {
+  const clean = paths.filter((p) => p && p.startsWith('imoveis/'))
+  if (clean.length === 0) return
+  try {
+    await fetch('/api/admin/upload', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths: clean }),
+    })
+  } catch {
+    /* best-effort */
+  }
 }

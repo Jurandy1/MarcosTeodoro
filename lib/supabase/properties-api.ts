@@ -89,8 +89,19 @@ export async function fetchAdminProperty(id: string): Promise<AdminProperty | nu
 
 export async function deleteAdminPropertyDb(id: string): Promise<void> {
   const supabase = createClient()
+  const { data: imgs } = await supabase
+    .from('property_images')
+    .select('path')
+    .eq('property_id', id)
+  const paths = (imgs ?? []).map((r) => r.path as string).filter(Boolean)
+
   const { error } = await supabase.from('properties').delete().eq('id', id)
   if (error) throw new Error(error.message)
+
+  if (paths.length > 0 && typeof window !== 'undefined') {
+    const { removePropertyPhotos } = await import('@/lib/supabase/storage')
+    void removePropertyPhotos(paths)
+  }
 }
 
 export async function saveAdminPropertyDb(property: AdminProperty): Promise<void> {

@@ -3,6 +3,7 @@ import { Topbar } from '@/components/topbar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { BrokerStrip } from '@/components/broker-strip'
+import { getPublicSiteSettings, whatsappUrl } from '@/lib/site-settings'
 
 export const metadata: Metadata = {
   title: 'Contato | Marcos Teodoro',
@@ -16,7 +17,10 @@ export const metadata: Metadata = {
   },
 }
 
-export default function ContatoPage() {
+export default async function ContatoPage() {
+  const settings = await getPublicSiteSettings()
+  const wa = whatsappUrl(settings.whatsapp, 'Olá, tenho interesse em imóveis no litoral.')
+
   return (
     <>
       <Topbar />
@@ -35,7 +39,7 @@ export default function ContatoPage() {
               ou fale direto pelo WhatsApp.
             </p>
             <a
-              href="https://wa.me/5547991594019?text=Olá%2C%20tenho%20interesse%20em%20imóveis%20no%20litoral."
+              href={wa}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex mt-5 min-h-[42px] items-center px-4 bg-[#25d366] text-white text-[0.68rem] font-semibold tracking-[.1em] uppercase hover:opacity-90"
@@ -44,7 +48,7 @@ export default function ContatoPage() {
             </a>
           </div>
         </section>
-        <BrokerStrip />
+        <BrokerStrip defaultWhatsapp={settings.whatsapp} />
       </main>
       <SiteFooter />
     </>

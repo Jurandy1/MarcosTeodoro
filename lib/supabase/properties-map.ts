@@ -49,6 +49,7 @@ export type PropertyRow = {
   videos: unknown[]
   is_featured?: boolean
   featured_order?: number
+  description?: string | null
   created_at: string
   updated_at: string
 }
@@ -105,6 +106,9 @@ export function toRow(p: AdminProperty): Omit<PropertyRow, 'images' | 'cover_url
     lng: p.lng ?? null,
     cover_path: coverPath,
     videos: p.videos ?? [],
+    description: p.description?.trim() || null,
+    is_featured: p.isFeatured ?? false,
+    featured_order: p.featuredOrder ?? 0,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
   }
@@ -198,6 +202,7 @@ export function fromRow(row: PropertyRow, imageRows: PropertyImageRow[] = []): A
     image: coverPath ? storageUrl(coverPath) : resolvedUrls[0],
     images: resolvedUrls,
     videos: (row.videos as CatalogProperty['videos']) ?? undefined,
+    description: row.description ?? undefined,
     isFeatured: row.is_featured ?? false,
     featuredOrder: row.featured_order ?? 0,
     createdAt: row.created_at,

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { PropertyGallery } from '@/components/property-gallery'
 import { PropertyCard } from '@/components/property-card'
+import { SharePropertyButton } from '@/components/share-property-button'
 import { buildMediaItems, mapsEmbedUrl, mapsExternalUrl } from '@/lib/property-images'
 import { type CatalogProperty, type PropertyMode } from '@/lib/properties'
 import {
@@ -8,15 +9,18 @@ import {
   propertyPublicPath,
   resolvePropertyTitle,
 } from '@/lib/property-title'
+import { whatsappUrl } from '@/lib/site-settings'
 
 export function PropertyDetailView({
   property,
   mode,
   similar = [],
+  whatsappPhone,
 }: {
   property: CatalogProperty
   mode: PropertyMode
   similar?: CatalogProperty[]
+  whatsappPhone?: string
 }) {
   const basePath = mode === 'venda' ? '/vendas' : '/aluguel'
   const kindLabel = property.kind === 'apartamento' ? 'Apartamentos' : 'Casas'
@@ -42,13 +46,24 @@ export function PropertyDetailView({
     address: property.address,
   })
 
-  const whatsappHref = `https://wa.me/5547991594019?text=${encodeURIComponent(
+  const whatsappHref = whatsappUrl(
+    whatsappPhone || '5547991594019',
     `Olá Marcos, tenho interesse no imóvel ${title} (cód. ${property.id}).\n${property.city}\n${property.price}\n${propertyUrl}`,
-  )}`
+  )
 
   const areaPrivate =
     property.areaPrivate ?? (typeof property.area === 'number' ? property.area : null)
   const areaTotal = property.areaTotal ?? null
+
+  const aboutText =
+    property.description?.trim() ||
+    `${property.kind === 'apartamento' ? 'Apartamento' : 'Casa'} em ${property.city}${
+      areaPrivate != null ? `, com ${areaPrivate} m² de área privativa` : ''
+    }${areaTotal != null ? ` e ${areaTotal} m² de área total` : ''}. ${property.bedrooms} dormitórios${
+      property.suites != null ? ` (${property.suites} suítes)` : ''
+    }, ${property.bathrooms} banheiros e ${property.parking} vaga${
+      Number(property.parking) === 1 ? '' : 's'
+    }.`
 
   return (
     <div className="bg-white text-[#2a3541]">
@@ -172,6 +187,9 @@ export function PropertyDetailView({
               >
                 Solicitar atendimento
               </a>
+              <div className="mt-2">
+                <SharePropertyButton url={propertyUrl} title={title} />
+              </div>
             </div>
           </aside>
         </div>
@@ -180,14 +198,8 @@ export function PropertyDetailView({
           <div className="max-w-[720px]">
             <section className="mb-10">
               <h2 className="text-[15px] font-semibold text-[#111827] mb-3">Sobre o imóvel</h2>
-              <p className="text-[15px] leading-[1.7] text-[#4b5563]">
-                {property.kind === 'apartamento' ? 'Apartamento' : 'Casa'} em {property.city}
-                {areaPrivate != null ? `, com ${areaPrivate} m² de área privativa` : ''}
-                {areaTotal != null ? ` e ${areaTotal} m² de área total` : ''}.{' '}
-                {property.bedrooms} dormitórios
-                {property.suites != null ? ` (${property.suites} suítes)` : ''},{' '}
-                {property.bathrooms} banheiros e {property.parking} vaga
-                {Number(property.parking) === 1 ? '' : 's'}.
+              <p className="text-[15px] leading-[1.7] text-[#4b5563] whitespace-pre-line">
+                {aboutText}
               </p>
             </section>
 
@@ -279,6 +291,19 @@ export function PropertyDetailView({
           </section>
         )}
       </div>
+
+      {/* Sticky WhatsApp no mobile */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-[#e5e7eb] bg-white/95 backdrop-blur-md px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center w-full min-h-[46px] bg-[#25d366] text-white text-[12px] font-semibold tracking-[0.1em] uppercase"
+        >
+          Pedir atendimento no WhatsApp
+        </a>
+      </div>
+      <div className="lg:hidden h-20" aria-hidden />
     </div>
   )
 }

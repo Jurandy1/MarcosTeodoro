@@ -18,7 +18,7 @@ async function fetchImageMap(ids: string[]): Promise<Record<string, PropertyImag
   return map
 }
 
-/** Imóveis públicos (status pronto) a partir do Supabase. */
+/** Imóveis públicos (status pronto) a partir do Supabase. Destaques primeiro. */
 export async function fetchPublicProperties(mode?: PropertyMode): Promise<CatalogProperty[]> {
   try {
     const supabase = await createClient()
@@ -29,13 +29,22 @@ export async function fetchPublicProperties(mode?: PropertyMode): Promise<Catalo
     const rows = data as PropertyRow[]
     const imagesMap = await fetchImageMap(rows.map((r) => r.id))
     const seen = new Set<string>()
-    return rows
+    const list = rows
       .map((r) => fromRow(r, imagesMap[r.id] ?? []))
       .filter((p) => {
         if (seen.has(p.id)) return false
         seen.add(p.id)
         return true
       })
+
+    // Destaques primeiro (featured_order ASC), depois demais por updatedAt
+    return list.sort((a, b) => {
+      const af = a.isFeatured ? 1 : 0
+      const bf = b.isFeatured ? 1 : 0
+      if (af !== bf) return bf - af
+      if (af && bf) return (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0)
+      return (b.updatedAt || '').localeCompare(a.updatedAt || '')
+    })
   } catch {
     return []
   }

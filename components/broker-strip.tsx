@@ -11,16 +11,6 @@ import {
 const MARCOS_PHOTO_2 =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/marcos-JBAkoIxvj0GDhvLLo503L00XTpnJTP.jpg'
 
-const FALLBACK_BROKERS: Record<
-  Consultant['budget_band'],
-  { name: string; phone: string }
-> = {
-  ate1m: { name: 'Consultor', phone: '5547991594019' },
-  de1a2: { name: 'Consultor', phone: '5547991594019' },
-  de2a3: { name: 'Consultor', phone: '5547991594019' },
-  acima3m: { name: 'Marcos Teodoro', phone: '5547991594019' },
-}
-
 type BudgetId = Consultant['budget_band']
 type City = 'Balneário Camboriú' | 'Itapema' | 'Porto Belo' | 'Bombinhas'
 
@@ -31,7 +21,15 @@ const CITY_OPTIONS: City[] = [
   'Bombinhas',
 ]
 
-export function BrokerStrip() {
+export function BrokerStrip({ defaultWhatsapp }: { defaultWhatsapp?: string } = {}) {
+  const fallbackPhone = (defaultWhatsapp || '5547991594019').replace(/\D/g, '')
+  const FALLBACK = {
+    ate1m: { name: 'Consultor', phone: fallbackPhone },
+    de1a2: { name: 'Consultor', phone: fallbackPhone },
+    de2a3: { name: 'Consultor', phone: fallbackPhone },
+    acima3m: { name: 'Marcos Teodoro', phone: fallbackPhone },
+  } as const
+
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [city, setCity] = useState<City | null>(null)
@@ -57,7 +55,7 @@ export function BrokerStrip() {
   const resolveBroker = (band: BudgetId) => {
     const c = consultants.find((x) => x.budget_band === band && x.active)
     if (c) return { name: c.name, phone: c.whatsapp.replace(/\D/g, '') }
-    return FALLBACK_BROKERS[band]
+    return FALLBACK[band]
   }
 
   const reset = () => {

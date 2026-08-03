@@ -34,6 +34,7 @@ import {
   formatPropertyTitle,
   samePropertyName,
 } from '@/lib/property-title'
+import { publishBlockers } from '@/lib/property-quality'
 
 type FormState = {
   id: string
@@ -65,6 +66,8 @@ type FormState = {
   lat: string
   lng: string
   images: StoredImage[]
+  description: string
+  sobConsulta: boolean
 }
 
 const emptyForm = (): FormState => ({
@@ -97,6 +100,8 @@ const emptyForm = (): FormState => ({
   lat: '',
   lng: '',
   images: [],
+  description: '',
+  sobConsulta: false,
 })
 
 function fromAdmin(p: AdminProperty): FormState {
@@ -140,6 +145,8 @@ function fromAdmin(p: AdminProperty): FormState {
             sizeBytes: 0,
             mimeType: 'image/webp',
           })),
+    description: p.description ?? '',
+    sobConsulta: /sob consulta/i.test(p.price || ''),
   }
 }
 
@@ -871,13 +878,27 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       setToast('Selecione ou cadastre o empreendimento.')
       return
     }
-    if (!form.price.trim()) {
-      setToast('Informe o valor.')
+
+    const priceOut = form.sobConsulta ? 'Sob consulta' : form.price.trim()
+    if (status === 'rascunho' && !priceOut) {
+      setToast('Informe o valor ou marque “Sob consulta”.')
       return
     }
-    if (status === 'pronto' && form.images.length === 0) {
-      setToast('Adicione ao menos 1 foto para marcar como pronto.')
-      return
+
+    if (status === 'pronto') {
+      const blockers = publishBlockers({
+        cityKey: form.cityKey,
+        price: priceOut,
+        priceValue: form.priceValue,
+        sobConsulta: form.sobConsulta,
+        bedrooms: form.bedrooms,
+        areaPrivate: form.areaPrivate,
+        imagesCount: form.images.length,
+      })
+      if (blockers.length) {
+        setToast(blockers[0])
+        return
+      }
     }
 
     setSaving(true)
@@ -910,13 +931,18 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
       area: areaPrivate,
       areaPrivate: areaPrivate || undefined,
       areaTotal: form.areaTotal ? Number(form.areaTotal) : undefined,
-      price: form.price.trim(),
-      priceValue: form.priceValue ? Number(form.priceValue) : undefined,
+      price: priceOut,
+      priceValue: form.sobConsulta
+        ? undefined
+        : form.priceValue
+          ? Number(form.priceValue)
+          : undefined,
       entrada: form.entrada.trim() || undefined,
       reforco: form.reforco.trim() || undefined,
       parcelamento: form.parcelamento.trim() || undefined,
       unitFeatures: linesToList(form.unitFeaturesText),
       amenities: linesToList(form.amenitiesText),
+      description: form.description.trim() || undefined,
       address: form.address.trim() || undefined,
       cep: form.cep.trim() || undefined,
       sourceUrl: form.sourceUrl.trim() || undefined,
@@ -933,6 +959,9 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
 
     try {
       await saveAdminPropertyDb(property)
+      if (status === 'pronto') {
+        setToast('Publicado! Abrindo lista…')
+      }
       router.push('/admin/imoveis')
       router.refresh()
     } catch (e) {
@@ -1232,7 +1261,26 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
             <div className="border-t border-[#ebe8e2] pt-4 grid sm:grid-cols-2 gap-3">
               <div>
                 <label className={label}>Valor</label>
-                <input className={field} value={form.price} onChange={set('price')} />
+                <input
+                  className={field}
+                  value={form.price}
+                  onChange={set('price')}
+                  disabled={form.sobConsulta}
+                />
+                <label className="mt-2 flex items-center gap-2 text-[0.8rem] text-[#4a5560]">
+                  <input
+                    type="checkbox"
+                    checked={form.sobConsulta}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        sobConsulta: e.target.checked,
+                        price: e.target.checked ? 'Sob consulta' : f.price === 'Sob consulta' ? '' : f.price,
+                      }))
+                    }
+                  />
+                  Sob consulta (sem valor público)
+                </label>
               </div>
               <div>
                 <label className={label}>Entrada</label>
@@ -1245,6 +1293,16 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
               <div>
                 <label className={label}>Parcelamento</label>
                 <input className={field} value={form.parcelamento} onChange={set('parcelamento')} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={label}>Sobre o imóvel (descrição)</label>
+                <textarea
+                  className={field}
+                  rows={5}
+                  value={form.description}
+                  onChange={set('description')}
+                  placeholder="Texto livre para a página do imóvel e para o Google…"
+                />
               </div>
             </div>
 

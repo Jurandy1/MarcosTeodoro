@@ -5,11 +5,17 @@ import { useEffect, useMemo, useState } from 'react'
 import type { AdminProperty } from '@/lib/admin-store'
 import { CITY_FILTERS } from '@/lib/properties'
 import { formatPropertyTitle, propertyPublicPath } from '@/lib/property-title'
+import {
+  propertyQualityIssues,
+  QUALITY_LABELS,
+} from '@/lib/property-quality'
 import { storageUrl } from '@/lib/storage'
 import {
   deleteAdminPropertyDb,
   fetchAdminProperties,
+  saveAdminPropertyDb,
 } from '@/lib/supabase/properties-api'
+import { setPropertyFeatured } from '@/lib/supabase/settings-api'
 
 const PAGE_SIZE = 10
 
@@ -79,6 +85,33 @@ export function AdminPropertyList() {
       await reload()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Erro ao excluir')
+    }
+  }
+
+  const updateListingStatus = async (p: AdminProperty, nextStatus: 'pronto' | 'rascunho') => {
+    try {
+      if (nextStatus === 'pronto') {
+        const issues = propertyQualityIssues(p)
+        if (issues.includes('sem_foto') || issues.includes('sem_cidade') || issues.includes('sem_specs')) {
+          alert(
+            `Não dá para publicar ainda: ${issues.map((i) => QUALITY_LABELS[i]).join(', ')}. Abra a edição.`,
+          )
+          return
+        }
+      }
+      await saveAdminPropertyDb({ ...p, status: nextStatus, updatedAt: new Date().toISOString() })
+      await reload()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro ao atualizar status')
+    }
+  }
+
+  const toggleFeatured = async (p: AdminProperty) => {
+    try {
+      await setPropertyFeatured(p.id, !p.isFeatured, !p.isFeatured ? Date.now() : 0)
+      await reload()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Erro ao destacar')
     }
   }
 
@@ -384,7 +417,24 @@ export function AdminPropertyList() {
                         ) || p.title}
                       </h2>
                       <StatusPill status={p.status} />
+                      {p.isFeatured && (
+                        <span className="text-[0.55rem] font-semibold tracking-[.08em] uppercase bg-[#e8f4f6] text-[#0e6b7a] px-1.5 py-0.5">
+                          Destaque
+                        </span>
+                      )}
                     </div>
+                    {propertyQualityIssues(p).length > 0 && (
+                      <div className="mb-1.5 flex flex-wrap gap-1">
+                        {propertyQualityIssues(p).map((i) => (
+                          <span
+                            key={i}
+                            className="text-[0.55rem] font-semibold tracking-[.06em] uppercase bg-[#fff4e0] text-[#8a7040] px-1.5 py-0.5"
+                          >
+                            {QUALITY_LABELS[i]}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-[0.84rem] text-[#6f7680]">
                       {p.cityKey || '—'}
                       <span className="mx-1.5 text-[#d0cbc2]">·</span>
@@ -396,7 +446,33 @@ export function AdminPropertyList() {
                     </p>
                     <p className="mt-1 text-[0.95rem] font-semibold text-[#0b1420]">{p.price}</p>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    {p.status === 'pronto' ? (
+                      <button
+                        type="button"
+                        onClick={() => void updateListingStatus(p, 'rascunho')}
+                        className="min-h-[42px] px-3 text-[0.62rem] font-semibold tracking-[.08em] uppercase border border-[#ebe8e2] text-[#6f7680]"
+                      >
+                        Rascunho
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void updateListingStatus(p, 'pronto')}
+                        className="min-h-[42px] px-3 text-[0.62rem] font-semibold tracking-[.08em] uppercase border border-[#c5e0d4] text-[#1f6b4a]"
+                      >
+                        Publicar
+                      </button>
+                    )}
+                    {p.status === 'pronto' && (
+                      <button
+                        type="button"
+                        onClick={() => void toggleFeatured(p)}
+                        className="min-h-[42px] px-3 text-[0.62rem] font-semibold tracking-[.08em] uppercase border border-[#ebe8e2] text-[#0e6b7a]"
+                      >
+                        {p.isFeatured ? 'Tirar destaque' : 'Destacar'}
+                      </button>
+                    )}
                     {p.status === 'pronto' && (
                       <Link
                         href={propertyPublicPath(p.id, p.mode)}

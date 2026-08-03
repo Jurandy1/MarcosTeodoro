@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { Topbar } from '@/components/topbar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
+import { agentJsonLd, JsonLd } from '@/lib/seo'
+import { getPublicSiteSettings } from '@/lib/site-settings'
 
 const MARCOS_PHOTO =
   'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/amrcos-AyeiWeXupJzq8ST9I0UpYvAXaaRlPf.jpg'
@@ -20,25 +22,28 @@ export const metadata: Metadata = {
   },
 }
 
-export default function SobrePage() {
+export default async function SobrePage() {
+  const settings = await getPublicSiteSettings()
+
   return (
     <>
+      <JsonLd data={agentJsonLd(settings)} />
       <Topbar />
       <SiteHeader />
       <main className="bg-[#f7f5f1]">
         <section className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
           <p className="text-[0.68rem] font-semibold tracking-[.16em] uppercase text-[#0e6b7a] mb-3">
-            Consultor imobiliário · CRECI SC 71914
+            Consultor imobiliário · {settings.creci}
           </p>
           <h1 className="font-serif text-[2rem] sm:text-[2.4rem] text-[#0b1420] leading-tight mb-6">
-            Sobre Marcos Teodoro
+            Sobre {settings.companyName}
           </h1>
 
           <div className="grid md:grid-cols-[220px_1fr] gap-8 items-start">
             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#ece9e3]">
               <Image
                 src={MARCOS_PHOTO}
-                alt="Marcos Teodoro"
+                alt={settings.companyName}
                 fill
                 className="object-cover object-[center_18%]"
                 sizes="220px"

@@ -40,6 +40,12 @@ export interface CatalogProperty extends Property {
   lng?: number
   /** valor numérico para ordenar/filtrar (sem R$) */
   priceValue?: number
+  /** Texto livre “Sobre o imóvel” */
+  description?: string
+  isFeatured?: boolean
+  featuredOrder?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export const CITY_FILTERS = [

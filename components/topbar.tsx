@@ -1,31 +1,46 @@
-export function Topbar() {
+import {
+  formatPhoneDisplay,
+  getPublicSiteSettings,
+  instagramHandle,
+  instagramUrl,
+  whatsappUrl,
+} from '@/lib/site-settings'
+
+export async function Topbar() {
+  const s = await getPublicSiteSettings()
+  const ig = instagramUrl(s.instagram)
+  const igLabel = instagramHandle(s.instagram)
+  const wa = whatsappUrl(s.whatsapp)
+  const phoneLabel = formatPhoneDisplay(s.whatsapp || s.phone)
+  const shortCreci = s.creci || 'CRECI SC 71914'
+
   return (
     <div className="bg-[#0b1420] text-[#c9cacd] text-[0.7rem] sm:text-[0.72rem]">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 py-2 sm:py-[0.55rem]">
         <span className="tracking-wide truncate min-w-0">
-          <span className="sm:hidden">CRECI SC 71914, Litoral SC</span>
-          <span className="hidden sm:inline">CRECI SC 71914 | Balneário Camboriú, Itapema, Porto Belo, Bombinhas</span>
+          <span className="sm:hidden">{shortCreci}, Litoral SC</span>
+          <span className="hidden sm:inline">{s.topbarText}</span>
         </span>
         <div className="flex items-center gap-3 sm:gap-5 shrink-0">
           <a
-            href="https://www.instagram.com/marcosteodoro.imoveis/"
+            href={ig}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
             className="hover:text-[#c9a35a] transition-colors flex items-center gap-1.5"
           >
             <InstagramIcon />
-            <span className="hidden sm:inline">@marcosteodoro.imoveis</span>
+            <span className="hidden sm:inline">{igLabel}</span>
           </a>
           <a
-            href="https://wa.me/5547991594019"
+            href={wa}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="WhatsApp"
             className="hover:text-[#c9a35a] transition-colors flex items-center gap-1.5"
           >
             <WhatsAppIcon />
-            <span className="hidden sm:inline">(47) 9 9159 4019</span>
+            <span className="hidden sm:inline">{phoneLabel}</span>
           </a>
         </div>
       </div>

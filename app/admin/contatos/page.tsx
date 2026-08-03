@@ -56,7 +56,7 @@ export default function AdminContatosPage() {
     setMsg(null)
     try {
       await saveSiteSettings(form)
-      setMsg('Contatos salvos.')
+      setMsg('Contatos salvos — já aplicados no topo, rodapé e WhatsApp do site.')
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Erro ao salvar')
     } finally {
