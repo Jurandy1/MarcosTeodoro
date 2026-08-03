@@ -15,9 +15,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params
   const property = await fetchPublicProperty(id)
   if (!property) return { title: 'Imóvel não encontrado' }
+  const path = `/vendas/${id}`
   return {
     title: `${property.title} | Marcos Teodoro`,
     description: `${property.city} · ${property.bedrooms} dorm · ${property.price}`,
+    alternates: { canonical: path },
+    openGraph: {
+      title: property.title,
+      description: `${property.city} · ${property.price}`,
+      url: path,
+      type: 'article',
+      images: property.image ? [{ url: property.image }] : undefined,
+    },
   }
 }
 

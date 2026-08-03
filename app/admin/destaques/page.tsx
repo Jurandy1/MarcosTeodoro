@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { AdminProperty } from '@/lib/admin-store'
 import { fetchAdminProperties } from '@/lib/supabase/properties-api'
 import { setPropertyFeatured } from '@/lib/supabase/settings-api'
+import { formatPropertyTitle } from '@/lib/property-title'
 
 export default function AdminDestaquesPage() {
   const [items, setItems] = useState<AdminProperty[]>([])
@@ -72,8 +73,7 @@ export default function AdminDestaquesPage() {
               >
                 <div>
                   <p className="font-medium text-[#0b1420]">
-                    {p.empreendimento || p.title}
-                    {p.unidade ? ` — ${p.unidade}` : ''}
+                    {formatPropertyTitle(p.empreendimento || p.title, p.unidade) || p.title}
                   </p>
                   <p className="text-[0.8rem] text-[#6f7680]">
                     {p.cityKey} · {p.price}
@@ -112,8 +112,7 @@ export default function AdminDestaquesPage() {
               >
                 <div>
                   <p className="font-medium text-[#0b1420]">
-                    {p.empreendimento || p.title}
-                    {p.unidade ? ` — ${p.unidade}` : ''}
+                    {formatPropertyTitle(p.empreendimento || p.title, p.unidade) || p.title}
                   </p>
                   <p className="text-[0.8rem] text-[#6f7680]">
                     {p.cityKey} · {p.price}

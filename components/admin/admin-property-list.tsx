@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import type { AdminProperty } from '@/lib/admin-store'
 import { CITY_FILTERS } from '@/lib/properties'
+import { formatPropertyTitle, propertyPublicPath } from '@/lib/property-title'
 import { storageUrl } from '@/lib/storage'
 import {
   deleteAdminPropertyDb,
@@ -377,8 +378,10 @@ export function AdminPropertyList() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <h2 className="font-medium text-[1.02rem] text-[#0b1420] truncate">
-                        {p.empreendimento || p.unitName || p.title}
-                        {p.unidade ? ` — ${p.unidade}` : ''}
+                        {formatPropertyTitle(
+                          p.empreendimento || p.unitName || p.title,
+                          p.unidade,
+                        ) || p.title}
                       </h2>
                       <StatusPill status={p.status} />
                     </div>
@@ -394,6 +397,16 @@ export function AdminPropertyList() {
                     <p className="mt-1 text-[0.95rem] font-semibold text-[#0b1420]">{p.price}</p>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
+                    {p.status === 'pronto' && (
+                      <Link
+                        href={propertyPublicPath(p.id, p.mode)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 sm:flex-none min-h-[42px] px-4 inline-flex items-center justify-center text-[0.68rem] font-semibold tracking-[.1em] uppercase border border-[#ebe8e2] text-[#0e6b7a] hover:bg-[#e8f4f6]"
+                      >
+                        Ver no site
+                      </Link>
+                    )}
                     <Link
                       href={`/admin/imoveis/${p.id}`}
                       className="flex-1 sm:flex-none min-h-[42px] px-4 inline-flex items-center justify-center text-[0.68rem] font-semibold tracking-[.1em] uppercase bg-[#0b1420] text-white hover:bg-[#162033]"

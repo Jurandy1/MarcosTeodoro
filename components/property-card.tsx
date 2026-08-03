@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { getFakePropertyImage } from '@/lib/property-images'
+import { propertyPublicPath, resolvePropertyTitle } from '@/lib/property-title'
 
 export interface Property {
   id: string
@@ -17,11 +18,15 @@ export interface Property {
   area: number | string
   price: string
   priceOld?: string
+  mode?: 'venda' | 'aluguel'
+  empreendimento?: string
+  unitName?: string
+  unidade?: string
 }
 
 export function PropertyCard({
   property,
-  href = '#',
+  href,
   compact = false,
 }: {
   property: Property
@@ -31,15 +36,19 @@ export function PropertyCard({
   const imageSrc = getFakePropertyImage(property.id, property.image)
   const areaIsNumber =
     typeof property.area === 'number' || /^\d+$/.test(String(property.area))
+  const link =
+    href ||
+    (property.mode ? propertyPublicPath(property.id, property.mode) : `#imovel-${property.id}`)
+  const displayTitle = resolvePropertyTitle(property) || property.title
 
   if (compact) {
     return (
       <article className="bg-white rounded-xl overflow-hidden flex flex-col h-full border border-[#ebe8e2] shadow-[0_2px_8px_rgba(11,20,32,.04)] group hover:shadow-[0_10px_28px_rgba(11,20,32,.1)] transition-shadow duration-300">
-        <Link href={href} className="block relative">
+        <Link href={link} className="block relative">
           <div className="relative aspect-[4/3] overflow-hidden bg-[#ece9e3]">
             <Image
               src={imageSrc}
-              alt={property.title}
+              alt={displayTitle}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               sizes="(max-width: 640px) 240px, (max-width: 1024px) 280px, 300px"
@@ -56,8 +65,8 @@ export function PropertyCard({
             {property.city}
           </div>
           <h3 className="font-serif text-[0.95rem] text-[#1a2432] leading-snug line-clamp-2 min-h-[2.5em] mb-2.5">
-            <Link href={href} className="hover:text-[#0e6b7a] transition-colors">
-              {property.title}
+            <Link href={link} className="hover:text-[#0e6b7a] transition-colors">
+              {displayTitle}
             </Link>
           </h3>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-[0.7rem] text-[#6f7680] border-t border-[#f0ede8] pt-2.5 mb-2.5">
@@ -86,11 +95,11 @@ export function PropertyCard({
 
   return (
     <article className="bg-white border border-[#e8e6e1] rounded-xl overflow-hidden flex flex-col transition-shadow duration-300 hover:shadow-[0_12px_32px_rgba(11,20,32,.08)] group">
-      <Link href={href} className="block">
+      <Link href={link} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-[#e8e6e1]">
           <Image
             src={imageSrc}
-            alt={property.title}
+            alt={displayTitle}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -109,8 +118,8 @@ export function PropertyCard({
         </div>
 
         <h3 className="font-serif text-[0.98rem] font-normal text-[#1a2432] mb-3 leading-snug line-clamp-2 min-h-[2.6em]">
-          <Link href={href} className="hover:text-[#0e6b7a] transition-colors">
-            {property.title}
+          <Link href={link} className="hover:text-[#0e6b7a] transition-colors">
+            {displayTitle}
           </Link>
         </h3>
 

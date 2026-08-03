@@ -2,6 +2,11 @@ import type { AdminProperty } from '@/lib/admin-store'
 import type { CatalogProperty } from '@/lib/properties'
 import type { StoredImage } from '@/lib/storage'
 import { storageUrl, storageUrls } from '@/lib/storage'
+import {
+  distinctUnidade,
+  formatPropertyTitle,
+  resolvePropertyTitle,
+} from '@/lib/property-title'
 
 export type PropertyRow = {
   id: string
@@ -62,6 +67,9 @@ export type PropertyImageRow = {
 export function toRow(p: AdminProperty): Omit<PropertyRow, 'images' | 'cover_url'> {
   const assets = p.imageAssets ?? []
   const coverPath = p.coverPath || assets[0]?.path || null
+  const emp = (p.empreendimento || p.unitName || p.title || '').trim()
+  const und = distinctUnidade(emp, p.unidade)
+  const title = formatPropertyTitle(emp, und) || resolvePropertyTitle(p)
   return {
     id: p.id,
     kind: p.kind,
@@ -72,10 +80,10 @@ export function toRow(p: AdminProperty): Omit<PropertyRow, 'images' | 'cover_url
     location: p.location,
     city: p.city,
     city_key: p.cityKey,
-    title: p.title,
-    unit_name: p.unitName ?? p.empreendimento ?? p.title,
-    empreendimento: p.empreendimento ?? p.unitName ?? p.title,
-    unidade: p.unidade ?? null,
+    title,
+    unit_name: emp || null,
+    empreendimento: emp || null,
+    unidade: und ?? null,
     bedrooms: Number(p.bedrooms) || 0,
     bathrooms: Number(p.bathrooms) || 0,
     suites: p.suites ?? null,
@@ -143,6 +151,15 @@ export function fromRow(row: PropertyRow, imageRows: PropertyImageRow[] = []): A
           ? [row.cover_url]
           : []
 
+  const emp = (row.empreendimento || row.unit_name || '').trim()
+  const und = distinctUnidade(emp, row.unidade)
+  const title = resolvePropertyTitle({
+    title: row.title,
+    empreendimento: emp,
+    unitName: row.unit_name,
+    unidade: und,
+  })
+
   return {
     id: row.id,
     kind: row.kind,
@@ -153,10 +170,10 @@ export function fromRow(row: PropertyRow, imageRows: PropertyImageRow[] = []): A
     location: row.location,
     city: row.city,
     cityKey: row.city_key,
-    title: row.title,
-    unitName: row.unit_name ?? row.empreendimento ?? row.title,
-    empreendimento: row.empreendimento ?? undefined,
-    unidade: row.unidade ?? undefined,
+    title,
+    unitName: emp || title,
+    empreendimento: emp || undefined,
+    unidade: und,
     bedrooms: row.bedrooms,
     bathrooms: row.bathrooms,
     suites: row.suites ?? undefined,

@@ -171,6 +171,16 @@ export function parseListingPaste(text: string): ParsedListing {
     }
   }
 
+  // Nunca guarda unidade idêntica ao empreendimento (evita "NOME — NOME")
+  if (
+    result.unidade &&
+    result.empreendimento &&
+    result.unidade.replace(/\s+/g, ' ').trim().toLowerCase() ===
+      result.empreendimento.replace(/\s+/g, ' ').trim().toLowerCase()
+  ) {
+    delete result.unidade
+  }
+
   if (result.empreendimento) {
     result.unitName = result.empreendimento
     result.title = result.empreendimento

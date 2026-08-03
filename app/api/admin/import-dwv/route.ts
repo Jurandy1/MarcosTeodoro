@@ -10,6 +10,7 @@ import {
   extractTrackedLinkId,
   fetchTrackedLink,
 } from '@/lib/dwv'
+import { distinctUnidade } from '@/lib/property-title'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -155,11 +156,13 @@ export async function POST(request: Request) {
     const fotoUrls = pictures.map(dwvPictureUrl)
     const displayTitle = dwvDisplayTitle(link)
 
+    const empName = property?.reDevelopment?.name?.trim() || null
+    const unitName = property?.name?.trim() || null
     const preview = {
       trackedLinkId,
       title: displayTitle,
-      empreendimento: property?.reDevelopment?.name?.trim() || null,
-      unidade: property?.name?.trim() || null,
+      empreendimento: empName,
+      unidade: distinctUnidade(empName, unitName) ?? null,
       dwvPropertyId: property?.id,
       propertyType: property?.propertyType,
       status: property?.status,

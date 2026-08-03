@@ -5,9 +5,11 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState, startTransition } from 'react'
 
 const navLinks = [
-  { href: '/vendas?tipo=apartamento', label: 'Apartamentos a venda' },
-  { href: '/vendas?tipo=casa', label: 'Casas a venda' },
-  { href: '/#sobre', label: 'Sobre' },
+  { href: '/vendas?tipo=apartamento', label: 'Apartamentos a venda', match: '/vendas' },
+  { href: '/vendas?tipo=casa', label: 'Casas a venda', match: '/vendas' },
+  { href: '/aluguel', label: 'Aluguel', match: '/aluguel' },
+  { href: '/sobre', label: 'Sobre', match: '/sobre' },
+  { href: '/contato', label: 'Contato', match: '/contato' },
 ]
 
 export function SiteHeader() {
@@ -52,10 +54,15 @@ export function SiteHeader() {
         </Link>
 
         <nav aria-label="Navegação principal" className="hidden md:block">
-          <ul className="flex items-center gap-5 lg:gap-6 list-none text-[0.68rem] lg:text-[0.72rem] font-semibold tracking-[.1em] lg:tracking-[.12em] uppercase text-[#4a5560]">
+          <ul className="flex items-center gap-4 lg:gap-5 list-none text-[0.65rem] lg:text-[0.7rem] font-semibold tracking-[.1em] lg:tracking-[.12em] uppercase text-[#4a5560]">
             {navLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="transition-colors hover:text-[#0e6b7a] whitespace-nowrap">
+                <Link
+                  href={link.href}
+                  className={`transition-colors hover:text-[#0e6b7a] whitespace-nowrap ${
+                    pathname.startsWith(link.match) ? 'text-[#0e6b7a]' : ''
+                  }`}
+                >
                   {link.label}
                 </Link>
               </li>
@@ -86,7 +93,9 @@ export function SiteHeader() {
                   <Link
                     href={link.href}
                     onClick={closeMenu}
-                    className="block px-3 py-3 text-[0.8rem] font-semibold tracking-[.1em] uppercase text-[#4a5560] active:text-[#0e6b7a]"
+                    className={`block px-3 py-3 text-[0.8rem] font-semibold tracking-[.1em] uppercase ${
+                      pathname.startsWith(link.match) ? 'text-[#0e6b7a]' : 'text-[#4a5560]'
+                    }`}
                   >
                     {link.label}
                   </Link>

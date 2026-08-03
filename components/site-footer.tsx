@@ -31,7 +31,9 @@ export function SiteFooter() {
               { href: '/', label: 'Início' },
               { href: '/vendas?tipo=apartamento', label: 'Apartamentos a venda' },
               { href: '/vendas?tipo=casa', label: 'Casas a venda' },
-              { href: '/#sobre', label: 'Sobre Marcos' },
+              { href: '/aluguel', label: 'Aluguel' },
+              { href: '/sobre', label: 'Sobre Marcos' },
+              { href: '/contato', label: 'Contato' },
             ].map((link) => (
               <li key={link.label}>
                 <Link href={link.href} className="hover:text-[#c9a35a] transition-colors">

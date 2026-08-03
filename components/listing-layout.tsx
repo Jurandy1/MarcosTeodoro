@@ -11,6 +11,7 @@ import {
   type PropertyKind,
   type PropertyMode,
 } from '@/lib/properties'
+import { propertyPublicPath } from '@/lib/property-title'
 
 interface ListingLayoutProps {
   title: string
@@ -292,7 +293,11 @@ export function ListingLayout({ title, titleEm, subtitle, properties, mode }: Li
               }`}
             >
               {filtered.map((p) => (
-                <PropertyCard key={p.id} property={p} href={`${basePath}/${p.id}`} />
+                <PropertyCard
+                  key={p.id}
+                  property={p}
+                  href={propertyPublicPath(p.id, mode)}
+                />
               ))}
             </div>
           )}

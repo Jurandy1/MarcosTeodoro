@@ -3,6 +3,11 @@ import { PropertyGallery } from '@/components/property-gallery'
 import { PropertyCard } from '@/components/property-card'
 import { buildMediaItems, mapsEmbedUrl, mapsExternalUrl } from '@/lib/property-images'
 import { type CatalogProperty, type PropertyMode } from '@/lib/properties'
+import {
+  propertyAbsoluteUrl,
+  propertyPublicPath,
+  resolvePropertyTitle,
+} from '@/lib/property-title'
 
 export function PropertyDetailView({
   property,
@@ -15,7 +20,8 @@ export function PropertyDetailView({
 }) {
   const basePath = mode === 'venda' ? '/vendas' : '/aluguel'
   const kindLabel = property.kind === 'apartamento' ? 'Apartamentos' : 'Casas'
-  const title = property.unitName ?? property.title
+  const title = resolvePropertyTitle(property)
+  const propertyUrl = propertyAbsoluteUrl(property.id, mode)
   const media = buildMediaItems({
     id: property.id,
     images: property.images,
@@ -37,7 +43,7 @@ export function PropertyDetailView({
   })
 
   const whatsappHref = `https://wa.me/5547991594019?text=${encodeURIComponent(
-    `Olá Marcos, tenho interesse no imóvel ${title} (cód. ${property.id}).\n${property.city}\n${property.price}`,
+    `Olá Marcos, tenho interesse no imóvel ${title} (cód. ${property.id}).\n${property.city}\n${property.price}\n${propertyUrl}`,
   )}`
 
   const areaPrivate =
@@ -267,7 +273,7 @@ export function PropertyDetailView({
             <h2 className="text-[1.25rem] font-semibold text-[#111827] mb-6">Imóveis semelhantes</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {similar.map((p) => (
-                <PropertyCard key={p.id} property={p} href={`${basePath}/${p.id}`} />
+                <PropertyCard key={p.id} property={p} href={propertyPublicPath(p.id, p.mode)} />
               ))}
             </div>
           </section>

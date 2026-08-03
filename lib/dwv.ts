@@ -1,5 +1,7 @@
 /** Cliente DWV GraphQL (hotsite / tracked link) */
 
+import { dedupePropertyTitle, formatPropertyTitle } from '@/lib/property-title'
+
 export const DWV_GRAPHQL = 'https://dwvapp.com.br/api/graphql'
 export const DWV_S3_BASE = 'https://dwvimages.s3.amazonaws.com'
 /** CDN menor/mais rápido — preferir no download */
@@ -156,8 +158,10 @@ export function dwvDisplayTitle(link: DwvTrackedLink): string {
   const prop = link.property
   const unit = prop?.name?.trim()
   const emp = prop?.reDevelopment?.name?.trim()
-  if (emp && unit && unit !== emp) return `${emp} — ${unit}`
-  return emp || unit || link.title?.trim() || 'Imóvel DWV'
+  // Evita "EMP — EMP" quando a unidade DWV repete o nome do empreendimento
+  const built = formatPropertyTitle(emp, unit)
+  if (built) return built
+  return dedupePropertyTitle(link.title) || 'Imóvel DWV'
 }
 
 export async function callDwv<T>(

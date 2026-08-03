@@ -29,6 +29,11 @@ import {
 } from '@/lib/supabase/properties-api'
 import { DwvDuplicateError, importDwvGallery } from '@/lib/supabase/import-dwv'
 import { removePropertyPhoto, uploadPropertyPhotos } from '@/lib/supabase/storage'
+import {
+  distinctUnidade,
+  formatPropertyTitle,
+  samePropertyName,
+} from '@/lib/property-title'
 
 type FormState = {
   id: string
@@ -98,7 +103,7 @@ function fromAdmin(p: AdminProperty): FormState {
   return {
     id: p.id,
     empreendimento: p.empreendimento || p.unitName || p.title,
-    unidade: p.unidade ?? '',
+    unidade: distinctUnidade(p.empreendimento || p.unitName || p.title, p.unidade) || '',
     title: p.title,
     kind: p.kind,
     mode: p.mode,
@@ -146,8 +151,7 @@ function linesToList(text: string): string[] {
 }
 
 function displayTitle(empreendimento: string, unidade: string) {
-  if (empreendimento && unidade) return `${empreendimento} — ${unidade}`
-  return empreendimento || unidade || ''
+  return formatPropertyTitle(empreendimento, unidade)
 }
 
 function norm(s: string) {
@@ -211,9 +215,18 @@ function applyParsedWithDiff(
     })
   }
   if (parsed.unidade != null && parsed.unidade !== '') {
-    setIfParsed('Unidade', true, f.unidade, parsed.unidade, (v) => {
-      next.unidade = v
-    })
+    const und = distinctUnidade(next.empreendimento || emp || '', parsed.unidade)
+    if (und) {
+      setIfParsed('Unidade', true, f.unidade, und, (v) => {
+        next.unidade = v
+      })
+    } else if (samePropertyName(f.unidade, next.empreendimento || emp || '')) {
+      // Unidade colada é igual ao empreendimento → limpa duplicata
+      if (f.unidade) {
+        changes.push({ label: 'Unidade', from: f.unidade, to: '—' })
+        next.unidade = ''
+      }
+    }
   }
 
   next.title = displayTitle(next.empreendimento, next.unidade)
@@ -869,7 +882,7 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
 
     setSaving(true)
     const now = new Date().toISOString()
-    const unidade = form.unidade.trim()
+    const unidade = distinctUnidade(emp, form.unidade) || ''
     const title = displayTitle(emp, unidade)
     const id = form.id.trim() || slugifyId(unidade ? `${emp}-${unidade}` : emp)
     const areaPrivate = Number(form.areaPrivate) || 0
@@ -963,6 +976,19 @@ export function PropertyAdminForm({ propertyId }: { propertyId?: string }) {
         <h1 className="mt-2 font-serif text-[1.7rem] sm:text-[1.9rem] text-[#0b1420]">
           {isEdit ? 'Editar imóvel' : 'Cadastrar imóvel'}
         </h1>
+        {isEdit && form.id && (
+          <p className="mt-1.5 text-[0.8rem] text-[#6f7680]">
+            Página pública:{' '}
+            <Link
+              href={`/${form.mode === 'aluguel' ? 'aluguel' : 'vendas'}/${form.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#0e6b7a] underline underline-offset-2"
+            >
+              /{form.mode === 'aluguel' ? 'aluguel' : 'vendas'}/{form.id}
+            </Link>
+          </p>
+        )}
       </div>
 
       {/* Steps */}
